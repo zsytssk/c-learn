@@ -1,4 +1,4 @@
-https://www.learn-c.org/en/Arrays_and_Pointers
+https://www.learn-c.org/en/Recursion
 
 ## 2024-07-01 15:13:10
 
@@ -10,7 +10,11 @@ https://www.learn-c.org/en/Arrays_and_Pointers
 - @ques c 如何处理内存问题 有 zig 中的 allocator 吗?
 
 - `cairo_surface_destroy(buffer->surface);`
+
   - buffer 是一个指向结构体的指针，则使用箭头运算符：buffer->surface。
+
+- dynamic memory allocator + array 这个是不是就可以搞一个动态的数组了
+  - https://www.learn-c.org/en/Arrays_and_Pointers
 
 ### end
 

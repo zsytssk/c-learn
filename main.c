@@ -1,25 +1,25 @@
 #include <stdio.h>
+#include <stdlib.h>
+
+typedef struct
+{
+    int x;
+    int y;
+} point;
 
 int main()
 {
-    int array[] = {1, 7, 4, 5, 9, 3, 5, 11, 6, 3, 4};
-    int i = 0;
+    point *mypoint = NULL;
 
-    while (i < 10)
-    {
-        /* your code goes here */
-        if (array[i] < 5)
-        {
-            i++;
-            continue;
-        }
-        if (array[i] > 10)
-        {
-            break;
-        }
-        printf("%d\n", array[i]);
-        i++;
-    }
+    /* Dynamically allocate a new point
+       struct which mypoint points to here */
 
+    mypoint = (point *)malloc(sizeof(point));
+
+    mypoint->x = 10;
+    mypoint->y = 5;
+    printf("mypoint coordinates: %d, %d\n", mypoint->x, mypoint->y);
+
+    free(mypoint);
     return 0;
 }

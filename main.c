@@ -1,42 +1,33 @@
 #include <stdio.h>
-#include <stdlib.h>
+
+/* define the union here */
+
+union data
+{
+    int data[6];
+    char chars[21];
+};
 
 int main()
 {
-    int i, j;
-    /* TODO: define the 2D pointer variable here */
-    int **pnumbers;
-    /* TODO: complete the following line to allocate memory for holding three rows */
-    pnumbers = (int **)malloc(3 * sizeof(int *));
 
-    /* TODO: allocate memory for storing the individual elements in a row */
-    pnumbers[0] = (int *)malloc(1 * sizeof(int));
-    pnumbers[1] = (int *)malloc(2 * sizeof(int));
-    pnumbers[2] = (int *)malloc(3 * sizeof(int));
+    // initializer lists like this are assigned to the first member of the union/struct!
+    // There are 6 ints here so...
+    union data intCharacters;
+    intCharacters.data[0] = 1853169737;
+    intCharacters.data[1] = 1936876900;
+    intCharacters.data[2] = 1684955508;
+    intCharacters.data[3] = 1768838432;
+    intCharacters.data[4] = 561213039;
+    intCharacters.data[5] = 0;
+    // {{1853169737, 1936876900, 1684955508, 1768838432, 561213039, 0}}
 
-    pnumbers[0][0] = 1;
-    pnumbers[1][0] = 1;
-    pnumbers[1][1] = 1;
-    pnumbers[2][0] = 1;
-    pnumbers[2][1] = 2;
-    pnumbers[2][2] = 1;
+    /* testing code */
+    printf("[");
+    // only go to 18 because 1 byte is for the terminating 0 and we don't print the last in the loop
+    for (int i = 0; i < 19; ++i)
+        printf("%c, ", intCharacters.chars[i]);
+    printf("%c]\n", intCharacters.chars[19]);
 
-    for (i = 0; i < 3; i++)
-    {
-        for (j = 0; j <= i; j++)
-        {
-            printf("%d", pnumbers[i][j]);
-        }
-        printf("\n");
-    }
-
-    for (i = 0; i < 3; i++)
-    {
-        /* TODO: free memory allocated for each row */
-        free(pnumbers[i]);
-    }
-
-    /* TODO: free the top-level pointer */
-    free(pnumbers);
-    return 0;
+    printf("%s\n", intCharacters.chars);
 }

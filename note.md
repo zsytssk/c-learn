@@ -1,4 +1,14 @@
-https://www.learn-c.org/en/Binary_trees
+https://www.learn-c.org/en/Bitmasks
+
+## 练习
+
+- @ques `int (*cmp)(const void *, const void *);`
+- @ques `void (*pf[])(int) = {f1, f2, f3};`
+
+- @rem `node_t **` 是什么意思
+
+  - `node_t **`是 node_t 指针的指针? 这怎么理解?
+    - 如果你在外面的函数中想改变`node_t *`的值, 你必须传过去`node_t **`
 
 ## 2024-07-01 15:13:10
 
@@ -8,11 +18,6 @@ https://www.learn-c.org/en/Binary_trees
   - 报错不知道在哪个位置
 
 - @ques zig 中 linklist 如何实现, 他又么有泛型?
-
-- @rem `node_t **` 是什么意思
-
-  - `node_t **`是 node_t 指针的指针? 这怎么理解?
-    - 如果你在外面的函数中想改变`node_t *`的值, 你必须传过去`node_t **`
 
 - @ques c printf NULL
 

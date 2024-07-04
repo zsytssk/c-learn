@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <assert.h>
 
+// https://www.learn-c.org/en/Bitmasks
 /* Finish initializing the flags */
 
 const short FLAG_ON = 1 << 0;          // 1  (0x01)

@@ -1,0 +1,31 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "build",
+      "type": "shell",
+      "command": "gcc",
+      "args": [
+        "-Wextra",
+        "-DWLR_USE_UNSTABLE",
+        "-g",
+        "${file}",
+        "-o",
+        "${fileDirname}/${fileBasenameNoExtension}",
+        "-I/usr/include/cairo",
+        "-I/usr/include/libdrm",
+        "-I/usr/include/pixman-1",
+        "-I/usr/include/wlr",
+        "-lcairo",
+        "-lwlroots",
+        "-lwayland-server"
+      ],
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "problemMatcher": ["$gcc"],
+      "detail": "Generated task for compiling a C file."
+    }
+  ]
+}

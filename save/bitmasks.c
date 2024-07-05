@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include <assert.h>
 
+// - @ques 位运算 -> 设置 清除 反转 检查 否定
+
 // https://www.learn-c.org/en/Bitmasks
 /* Finish initializing the flags */
 

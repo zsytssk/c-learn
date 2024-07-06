@@ -136,7 +136,7 @@ static void server_handle_new_output(struct wl_listener *listener, void *data)
 int main(void)
 {
 	printf("hello world\n");
-	wlr_log_init(WLR_DEBUG, NULL);
+	// wlr_log_init(WLR_DEBUG, NULL);
 
 	struct server server = {0};
 	server.display = wl_display_create();

@@ -1,4 +1,4 @@
-https://www.learn-c.org/en/Bitmasks
+https://way-cooler.org/book/basic_output_cursor.html
 
 ## 练习
 
@@ -6,13 +6,10 @@ https://www.learn-c.org/en/Bitmasks
 
 - @ques
 
+  - 理清 `sample.c`
   - 显示鼠标
+  - 窗口打下
   - 打开窗口
-
-- @ques c 语言的问题
-
-  - 没有高级特性
-  - 报错不知道在哪个位置
 
 - @ques c 如何处理内存问题 有 zig 中的 allocator 吗?
 

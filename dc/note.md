@@ -8,8 +8,8 @@ https://way-cooler.org/book/basic_output_cursor.html
 
   - 理清 `sample.c`
   - 显示鼠标
-  - 窗口打下
-  - 打开窗口
+  - 窗口大小
+  - 打开 app
 
 - @ques c 如何处理内存问题 有 zig 中的 allocator 吗?
 

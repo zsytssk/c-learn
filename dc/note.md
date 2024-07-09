@@ -4,12 +4,10 @@ https://way-cooler.org/book/basic_output_cursor.html
 
 ## 2024-07-01 15:13:10
 
-- @ques
+- @save
 
-  - 理清 `sample.c`
-  - 显示鼠标
-  - 窗口大小
-  - 打开 app
+  - `calloc(1, sizeof(*sample_output))`
+  - `struct timespec now; clock_gettime(CLOCK_MONOTONIC, &now);`
 
 - @ques c 如何处理内存问题 有 zig 中的 allocator 吗?
 

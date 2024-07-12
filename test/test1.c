@@ -104,12 +104,12 @@ int main(int argc, char *argv[])
     xwayland_ready_listener.notify = handle_xwayland_ready;
     wl_signal_add(&state.xwayland->events.ready, &xwayland_ready_listener);
 
-    if (fork() == 0)
-    {
-        // 子进程: 启动 Wayland 客户端应用程序
-        execl("/usr/bin/alacritty", "alacritty", NULL);
-        _exit(1); // 如果 exec 失败，退出子进程
-    }
+    // if (fork() == 0)
+    // {
+    //     // 子进程: 启动 Wayland 客户端应用程序
+    //     execl("/usr/bin/alacritty", "alacritty", NULL);
+    //     _exit(1); // 如果 exec 失败，退出子进程
+    // }
 
     wlr_backend_start(state.backend);
     wlr_log(WLR_INFO, "Running Wayland compositor on WAYLAND_DISPLAY=%s", socket);

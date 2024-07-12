@@ -2,17 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-struct point
-{
-    int x;
-    int y;
-};
-
-struct line
-{
-    struct point start;
-    struct point end;
-};
+struct line;
 
 int main()
 {

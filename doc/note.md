@@ -1,13 +1,40 @@
 https://way-cooler.org/book/basic_output_cursor.html
+https://wayland.freedesktop.org/docs/html/ch04.html
 
 ## 练习
-
-## 2024-07-01 15:13:10
 
 - @save
 
   - `calloc(1, sizeof(*sample_output))`
   - `struct timespec now; clock_gettime(CLOCK_MONOTONIC, &now);`
+
+- @ques c 语言中的宏 `wl_container_of`
+
+## 2024-07-01 15:13:10
+
+- @ques `wlroots` 调用都是 server 的接口, 他的全部功能是如何实现的?
+
+- @ques `wl_compositor_interface`
+
+- @ques `xprop for wayland`
+
+- @ques `wl_display` 的具体内容不需要定义?
+
+- @ques 我是不是需要先去学习下 wayland 的教程
+  - 用对象组成结构, 联系成体系 -> 这比关注方法应该更有效
+
+```
+struct wlr_output_mode mode;
+mode.width = new_width;     // 新宽度
+mode.height = new_height;   // 新高度
+mode.refresh = 60 * 1000;   // 刷新率 (单位是 Hz，这里设置为 60 Hz)
+
+wlr_output_set_mode(output, &mode);
+```
+
+- @ques `xkb_keymap_unref(keymap);xkb_context_unref(context);`
+
+  - 在使用之后这两个变量就可以回收了吗? 难道不需要将状态保存吗?
 
 - @ques c 如何处理内存问题 有 zig 中的 allocator 吗?
 

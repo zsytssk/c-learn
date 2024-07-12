@@ -58,29 +58,30 @@ static void output_frame_notify(struct wl_listener *listener, void *data)
               (now.tv_nsec - sample->last_frame.tv_nsec) / 1000000;
     int inc = (sample->dec + 1) % 3;
 
-    sample->color[inc] += ms / 2000.0f;
-    sample->color[sample->dec] -= ms / 2000.0f;
+    // sample->color[inc] += ms / 2000.0f;
+    // sample->color[sample->dec] -= ms / 2000.0f;
 
-    if (sample->color[sample->dec] < 0.0f)
-    {
-        sample->color[inc] = 1.0f;
-        sample->color[sample->dec] = 0.0f;
-        sample->dec = inc;
-    }
+    // if (sample->color[sample->dec] < 0.0f)
+    // {
+    //     sample->color[inc] = 1.0f;
+    //     sample->color[sample->dec] = 0.0f;
+    //     sample->dec = inc;
+    // }
 
     struct wlr_output_state state;
     wlr_output_state_init(&state);
-    struct wlr_render_pass *pass = wlr_output_begin_render_pass(wlr_output, &state, NULL, NULL);
-    wlr_render_pass_add_rect(pass, &(struct wlr_render_rect_options){
-                                       .box = {.width = wlr_output->width, .height = wlr_output->height},
-                                       .color = {
-                                           .r = sample->color[0],
-                                           .g = sample->color[1],
-                                           .b = sample->color[2],
-                                           .a = sample->color[3],
-                                       },
-                                   });
-    wlr_render_pass_submit(pass);
+
+    // struct wlr_render_pass *pass = wlr_output_begin_render_pass(wlr_output, &state, NULL, NULL);
+    // wlr_render_pass_add_rect(pass, &(struct wlr_render_rect_options){
+    //                                    .box = {.width = wlr_output->width, .height = wlr_output->height},
+    //                                    .color = {
+    //                                        .r = sample->color[0],
+    //                                        .g = sample->color[1],
+    //                                        .b = sample->color[2],
+    //                                        .a = sample->color[3],
+    //                                    },
+    //                                });
+    // wlr_render_pass_submit(pass);
 
     wlr_output_commit_state(wlr_output, &state);
     wlr_output_state_finish(&state);
@@ -103,7 +104,7 @@ static void new_output_notify(struct wl_listener *listener, void *data)
     struct sample_state *sample =
         wl_container_of(listener, sample, new_output);
 
-    wlr_log(WLR_ERROR, "new_output_notify:> %s", output->name);
+    wlr_log(WLR_ERROR, "new_output_notify:> %d", sample->color[3]);
     wlr_output_init_render(output, sample->allocator, sample->renderer);
 
     struct sample_output *sample_output = calloc(1, sizeof(*sample_output));
@@ -135,7 +136,7 @@ static void keyboard_key_notify(struct wl_listener *listener, void *data)
     const xkb_keysym_t *syms;
     int nsyms = xkb_state_key_get_syms(keyboard->wlr_keyboard->xkb_state,
                                        keycode, &syms);
-    wlr_log(WLR_ERROR, "keyboard_key_notify:> %d", event->keycode);
+    wlr_log(WLR_ERROR, "keyboard_key_notify:> code=%d, nsyms=%d", event->keycode, nsyms);
     for (int i = 0; i < nsyms; i++)
     {
         xkb_keysym_t sym = syms[i];
@@ -155,6 +156,7 @@ static void keyboard_key_notify(struct wl_listener *listener, void *data)
 
 static void keyboard_destroy_notify(struct wl_listener *listener, void *data)
 {
+    wlr_log(WLR_ERROR, "keyboard_destroy_notify");
     struct sample_keyboard *keyboard =
         wl_container_of(listener, keyboard, destroy);
     wl_list_remove(&keyboard->destroy.link);
@@ -165,8 +167,8 @@ static void keyboard_destroy_notify(struct wl_listener *listener, void *data)
 static void new_input_notify(struct wl_listener *listener, void *data)
 {
     struct wlr_input_device *device = data;
-    wlr_log(WLR_ERROR, "new_input_notify:> %s", device->name);
     struct sample_state *sample = wl_container_of(listener, sample, new_input);
+    wlr_log(WLR_ERROR, "new_input_notify:> %d", device->type);
     switch (device->type)
     {
 
@@ -223,6 +225,7 @@ int main(void)
     state.new_output.notify = new_output_notify;
     wl_signal_add(&backend->events.new_input, &state.new_input);
     state.new_input.notify = new_input_notify;
+
     clock_gettime(CLOCK_MONOTONIC, &state.last_frame);
 
     if (!wlr_backend_start(backend))

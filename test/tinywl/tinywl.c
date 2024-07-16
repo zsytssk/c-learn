@@ -638,6 +638,7 @@ static void output_frame(struct wl_listener *listener, void *data)
 	struct tinywl_output *output = wl_container_of(listener, output, frame);
 	struct wlr_scene *scene = output->server->scene;
 
+	wlr_log(WLR_ERROR, "new_output_notify:> %d", output->wlr_output->width);
 	struct wlr_scene_output *scene_output = wlr_scene_get_scene_output(
 		scene, output->wlr_output);
 

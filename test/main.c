@@ -49,6 +49,7 @@ struct sample_output
     struct local_server *sample;
     struct wlr_output *output;
     struct wl_listener frame;
+    struct wl_listener request_state;
     struct wl_listener destroy;
 };
 
@@ -67,15 +68,38 @@ static void output_frame_notify(struct wl_listener *listener, void *data)
     struct local_server *sample = sample_output->sample;
     struct wlr_output *wlr_output = sample_output->output;
 
+    wlr_log(WLR_ERROR, "new_output_notify:> %d", wlr_output->width);
+    // struct timespec now;
+    // clock_gettime(CLOCK_MONOTONIC, &now);
+
+    // struct wlr_output_state state;
+    // wlr_output_state_init(&state);
+
+    // wlr_output_commit_state(wlr_output, &state);
+    // wlr_output_state_finish(&state);
+    // sample->last_frame = now;
+
+    struct wlr_scene *scene = sample_output->sample->scene;
+
+    struct wlr_scene_output *scene_output = wlr_scene_get_scene_output(
+        scene, sample_output->output);
+
+    /* Render the scene if needed and commit the output */
+    wlr_scene_output_commit(scene_output, NULL);
+
     struct timespec now;
     clock_gettime(CLOCK_MONOTONIC, &now);
+    wlr_scene_output_send_frame_done(scene_output, &now);
+}
 
-    struct wlr_output_state state;
-    wlr_output_state_init(&state);
-
-    wlr_output_commit_state(wlr_output, &state);
-    wlr_output_state_finish(&state);
-    sample->last_frame = now;
+static void output_request_state(struct wl_listener *listener, void *data)
+{
+    /* This function is called when the backend requests a new state for
+     * the output. For example, Wayland and X11 backends request a new mode
+     * when the output window is resized. */
+    struct sample_output *output = wl_container_of(listener, output, request_state);
+    const struct wlr_output_event_request_state *event = data;
+    wlr_output_commit_state(output->output, event->state);
 }
 
 static void output_remove_notify(struct wl_listener *listener, void *data)
@@ -94,7 +118,6 @@ static void new_output_notify(struct wl_listener *listener, void *data)
     struct local_server *sample =
         wl_container_of(listener, sample, new_output);
 
-    wlr_log(WLR_ERROR, "new_output_notify:> %d", output->width);
     wlr_output_init_render(output, sample->allocator, sample->renderer);
 
     struct sample_output *sample_output = calloc(1, sizeof(*sample_output));
@@ -102,6 +125,10 @@ static void new_output_notify(struct wl_listener *listener, void *data)
     sample_output->sample = sample;
     wl_signal_add(&output->events.frame, &sample_output->frame);
     sample_output->frame.notify = output_frame_notify;
+
+    sample_output->request_state.notify = output_request_state;
+    wl_signal_add(&output->events.request_state, &sample_output->request_state);
+
     wl_signal_add(&output->events.destroy, &sample_output->destroy);
     sample_output->destroy.notify = output_remove_notify;
 
@@ -115,6 +142,11 @@ static void new_output_notify(struct wl_listener *listener, void *data)
     }
     wlr_output_commit_state(output, &state);
     wlr_output_state_finish(&state);
+
+    struct wlr_output_layout_output *l_output = wlr_output_layout_add_auto(sample->output_layout,
+                                                                           output);
+    struct wlr_scene_output *scene_output = wlr_scene_output_create(sample->scene, output);
+    wlr_scene_output_layout_add_output(sample->scene_layout, l_output, scene_output);
 }
 
 static void keyboard_key_notify(struct wl_listener *listener, void *data)

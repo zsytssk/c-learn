@@ -20,7 +20,8 @@
 #include <wlr/util/log.h>
 #include <xkbcommon/xkbcommon.h>
 
-struct sample_state {
+struct local_server
+{
 	struct wl_display *display;
 	struct wlr_renderer *renderer;
 	struct wlr_allocator *allocator;
@@ -41,8 +42,9 @@ struct sample_state {
 	struct wl_list tablet_pads;
 };
 
-struct tablet_tool_state {
-	struct sample_state *sample;
+struct tablet_tool_state
+{
+	struct local_server *sample;
 	struct wlr_tablet *wlr_tablet;
 	struct wl_listener destroy;
 	struct wl_listener axis;
@@ -53,8 +55,9 @@ struct tablet_tool_state {
 	void *data;
 };
 
-struct tablet_pad_state {
-	struct sample_state *sample;
+struct tablet_pad_state
+{
+	struct local_server *sample;
 	struct wlr_tablet_pad *wlr_tablet_pad;
 	struct wl_listener destroy;
 	struct wl_listener button;
@@ -63,23 +66,26 @@ struct tablet_pad_state {
 	void *data;
 };
 
-struct sample_output {
-	struct sample_state *sample;
+struct sample_output
+{
+	struct local_server *sample;
 	struct wlr_output *output;
 	struct wl_listener frame;
 	struct wl_listener destroy;
 };
 
-struct sample_keyboard {
-	struct sample_state *sample;
+struct sample_keyboard
+{
+	struct local_server *sample;
 	struct wlr_keyboard *wlr_keyboard;
 	struct wl_listener key;
 	struct wl_listener destroy;
 };
 
-static void output_frame_notify(struct wl_listener *listener, void *data) {
+static void output_frame_notify(struct wl_listener *listener, void *data)
+{
 	struct sample_output *sample_output = wl_container_of(listener, sample_output, frame);
-	struct sample_state *sample = sample_output->sample;
+	struct local_server *sample = sample_output->sample;
 	struct wlr_output *wlr_output = sample_output->output;
 	struct timespec now;
 	clock_gettime(CLOCK_MONOTONIC, &now);
@@ -92,13 +98,14 @@ static void output_frame_notify(struct wl_listener *listener, void *data) {
 	struct wlr_render_pass *pass = wlr_output_begin_render_pass(wlr_output, &output_state, NULL, NULL);
 
 	wlr_render_pass_add_rect(pass, &(struct wlr_render_rect_options){
-		.box = { .width = wlr_output->width, .height = wlr_output->height },
-		.color = { 0.25, 0.25, 0.25, 1 },
-	});
+									   .box = {.width = wlr_output->width, .height = wlr_output->height},
+									   .color = {0.25, 0.25, 0.25, 1},
+								   });
 
 	float distance = 0.8f * (1 - sample->distance);
-	float tool_color[4] = { distance, distance, distance, 1 };
-	for (size_t i = 0; sample->button && i < 4; ++i) {
+	float tool_color[4] = {distance, distance, distance, 1};
+	for (size_t i = 0; sample->button && i < 4; ++i)
+	{
 		tool_color[i] = sample->tool_color[i];
 	}
 	float scale = 4;
@@ -108,21 +115,22 @@ static void output_frame_notify(struct wl_listener *listener, void *data) {
 	float left = width / 2.0f - pad_width / 2.0f;
 	float top = height / 2.0f - pad_height / 2.0f;
 	wlr_render_pass_add_rect(pass, &(struct wlr_render_rect_options){
-		.box = {
-			.x = left,
-			.y = top,
-			.width = pad_width,
-			.height = pad_height,
-		},
-		.color = {
-			sample->pad_color[0],
-			sample->pad_color[1],
-			sample->pad_color[2],
-			sample->pad_color[3],
-		},
-	});
+									   .box = {
+										   .x = left,
+										   .y = top,
+										   .width = pad_width,
+										   .height = pad_height,
+									   },
+									   .color = {
+										   sample->pad_color[0],
+										   sample->pad_color[1],
+										   sample->pad_color[2],
+										   sample->pad_color[3],
+									   },
+								   });
 
-	if (sample->proximity) {
+	if (sample->proximity)
+	{
 		struct wlr_box box = {
 			.x = (sample->x * pad_width) - 8 * (sample->pressure + 1) + left,
 			.y = (sample->y * pad_height) - 8 * (sample->pressure + 1) + top,
@@ -132,28 +140,28 @@ static void output_frame_notify(struct wl_listener *listener, void *data) {
 
 		// TODO: use sample->ring
 		wlr_render_pass_add_rect(pass, &(struct wlr_render_rect_options){
-			.box = box,
-			.color = {
-				tool_color[0],
-				tool_color[1],
-				tool_color[2],
-				tool_color[3],
-			},
-		});
+										   .box = box,
+										   .color = {
+											   tool_color[0],
+											   tool_color[1],
+											   tool_color[2],
+											   tool_color[3],
+										   },
+									   });
 
 		box.x += sample->x_tilt;
 		box.y += sample->y_tilt;
 		box.width /= 2;
 		box.height /= 2;
 		wlr_render_pass_add_rect(pass, &(struct wlr_render_rect_options){
-			.box = box,
-			.color = {
-				tool_color[0],
-				tool_color[1],
-				tool_color[2],
-				tool_color[3],
-			},
-		});
+										   .box = box,
+										   .color = {
+											   tool_color[0],
+											   tool_color[1],
+											   tool_color[2],
+											   tool_color[3],
+										   },
+									   });
 	}
 
 	wlr_render_pass_submit(pass);
@@ -162,83 +170,110 @@ static void output_frame_notify(struct wl_listener *listener, void *data) {
 	sample->last_frame = now;
 }
 
-static void tablet_tool_axis_notify(struct wl_listener *listener, void *data) {
+static void tablet_tool_axis_notify(struct wl_listener *listener, void *data)
+{
 	struct tablet_tool_state *tstate = wl_container_of(listener, tstate, axis);
 	struct wlr_tablet_tool_axis_event *event = data;
-	struct sample_state *sample = tstate->sample;
-	if ((event->updated_axes & WLR_TABLET_TOOL_AXIS_X)) {
+	struct local_server *sample = tstate->sample;
+	if ((event->updated_axes & WLR_TABLET_TOOL_AXIS_X))
+	{
 		sample->x = event->x;
 	}
-	if ((event->updated_axes & WLR_TABLET_TOOL_AXIS_Y)) {
+	if ((event->updated_axes & WLR_TABLET_TOOL_AXIS_Y))
+	{
 		sample->y = event->y;
 	}
-	if ((event->updated_axes & WLR_TABLET_TOOL_AXIS_DISTANCE)) {
+	if ((event->updated_axes & WLR_TABLET_TOOL_AXIS_DISTANCE))
+	{
 		sample->distance = event->distance;
 	}
-	if ((event->updated_axes & WLR_TABLET_TOOL_AXIS_PRESSURE)) {
+	if ((event->updated_axes & WLR_TABLET_TOOL_AXIS_PRESSURE))
+	{
 		sample->pressure = event->pressure;
 	}
-	if ((event->updated_axes & WLR_TABLET_TOOL_AXIS_TILT_X)) {
+	if ((event->updated_axes & WLR_TABLET_TOOL_AXIS_TILT_X))
+	{
 		sample->x_tilt = event->tilt_x;
 	}
-	if ((event->updated_axes & WLR_TABLET_TOOL_AXIS_TILT_Y)) {
+	if ((event->updated_axes & WLR_TABLET_TOOL_AXIS_TILT_Y))
+	{
 		sample->y_tilt = event->tilt_y;
 	}
 }
 
-static void tablet_tool_proximity_notify(struct wl_listener *listener, void *data) {
+static void tablet_tool_proximity_notify(struct wl_listener *listener, void *data)
+{
 	struct tablet_tool_state *tstate = wl_container_of(listener, tstate, proximity);
 	struct wlr_tablet_tool_proximity_event *event = data;
-	struct sample_state *sample = tstate->sample;
+	struct local_server *sample = tstate->sample;
 	sample->proximity = event->state == WLR_TABLET_TOOL_PROXIMITY_IN;
 }
 
-static void tablet_tool_button_notify(struct wl_listener *listener, void *data) {
+static void tablet_tool_button_notify(struct wl_listener *listener, void *data)
+{
 	struct tablet_tool_state *tstate = wl_container_of(listener, tstate, button);
 	struct wlr_tablet_tool_button_event *event = data;
-	struct sample_state *sample = tstate->sample;
-	if (event->state == WLR_BUTTON_RELEASED) {
+	struct local_server *sample = tstate->sample;
+	if (event->state == WLR_BUTTON_RELEASED)
+	{
 		sample->button = false;
-	} else {
+	}
+	else
+	{
 		sample->button = true;
-		for (size_t i = 0; i < 3; ++i) {
-			if (event->button % 3 == i) {
+		for (size_t i = 0; i < 3; ++i)
+		{
+			if (event->button % 3 == i)
+			{
 				sample->tool_color[i] = 0;
-			} else {
+			}
+			else
+			{
 				sample->tool_color[i] = 1;
 			}
 		}
 	}
 }
 
-static void tablet_pad_button_notify(struct wl_listener *listener, void *data) {
+static void tablet_pad_button_notify(struct wl_listener *listener, void *data)
+{
 	struct tablet_pad_state *pstate = wl_container_of(listener, pstate, button);
 	struct wlr_tablet_pad_button_event *event = data;
-	struct sample_state *sample = pstate->sample;
-	float default_color[4] = { 0.5, 0.5, 0.5, 1.0 };
-	if (event->state == WLR_BUTTON_RELEASED) {
+	struct local_server *sample = pstate->sample;
+	float default_color[4] = {0.5, 0.5, 0.5, 1.0};
+	if (event->state == WLR_BUTTON_RELEASED)
+	{
 		memcpy(sample->pad_color, default_color, sizeof(default_color));
-	} else {
-		for (size_t i = 0; i < 3; ++i) {
-			if (event->button % 3 == i) {
+	}
+	else
+	{
+		for (size_t i = 0; i < 3; ++i)
+		{
+			if (event->button % 3 == i)
+			{
 				sample->pad_color[i] = 0;
-			} else {
+			}
+			else
+			{
 				sample->pad_color[i] = 1;
 			}
 		}
 	}
 }
 
-static void tablet_pad_ring_notify(struct wl_listener *listener, void *data) {
+static void tablet_pad_ring_notify(struct wl_listener *listener, void *data)
+{
 	struct tablet_pad_state *pstate = wl_container_of(listener, pstate, ring);
 	struct wlr_tablet_pad_ring_event *event = data;
-	struct sample_state *sample = pstate->sample;
-	if (event->position != -1) {
+	struct local_server *sample = pstate->sample;
+	if (event->position != -1)
+	{
 		sample->ring = -(event->position * (M_PI / 180.0));
 	}
 }
 
-static void tablet_tool_destroy_notify(struct wl_listener *listener, void *data) {
+static void tablet_tool_destroy_notify(struct wl_listener *listener, void *data)
+{
 	struct tablet_tool_state *tstate = wl_container_of(listener, tstate, destroy);
 	wl_list_remove(&tstate->link);
 	wl_list_remove(&tstate->destroy.link);
@@ -248,7 +283,8 @@ static void tablet_tool_destroy_notify(struct wl_listener *listener, void *data)
 	free(tstate);
 }
 
-static void tablet_pad_destroy_notify(struct wl_listener *listener, void *data) {
+static void tablet_pad_destroy_notify(struct wl_listener *listener, void *data)
+{
 	struct tablet_pad_state *pstate = wl_container_of(listener, pstate, destroy);
 	wl_list_remove(&pstate->link);
 	wl_list_remove(&pstate->destroy.link);
@@ -257,16 +293,18 @@ static void tablet_pad_destroy_notify(struct wl_listener *listener, void *data) 
 	free(pstate);
 }
 
-static void output_remove_notify(struct wl_listener *listener, void *data) {
+static void output_remove_notify(struct wl_listener *listener, void *data)
+{
 	struct sample_output *sample_output = wl_container_of(listener, sample_output, destroy);
 	wl_list_remove(&sample_output->frame.link);
 	wl_list_remove(&sample_output->destroy.link);
 	free(sample_output);
 }
 
-static void new_output_notify(struct wl_listener *listener, void *data) {
+static void new_output_notify(struct wl_listener *listener, void *data)
+{
 	struct wlr_output *output = data;
-	struct sample_state *sample = wl_container_of(listener, sample, new_output);
+	struct local_server *sample = wl_container_of(listener, sample, new_output);
 
 	wlr_output_init_render(output, sample->allocator, sample->renderer);
 
@@ -282,40 +320,47 @@ static void new_output_notify(struct wl_listener *listener, void *data) {
 	wlr_output_state_init(&state);
 	wlr_output_state_set_enabled(&state, true);
 	struct wlr_output_mode *mode = wlr_output_preferred_mode(output);
-	if (mode != NULL) {
+	if (mode != NULL)
+	{
 		wlr_output_state_set_mode(&state, mode);
 	}
 	wlr_output_commit_state(output, &state);
 	wlr_output_state_finish(&state);
 }
 
-static void keyboard_key_notify(struct wl_listener *listener, void *data) {
+static void keyboard_key_notify(struct wl_listener *listener, void *data)
+{
 	struct sample_keyboard *keyboard = wl_container_of(listener, keyboard, key);
-	struct sample_state *sample = keyboard->sample;
+	struct local_server *sample = keyboard->sample;
 	struct wlr_keyboard_key_event *event = data;
 	uint32_t keycode = event->keycode + 8;
 	const xkb_keysym_t *syms;
 	int nsyms = xkb_state_key_get_syms(keyboard->wlr_keyboard->xkb_state,
-			keycode, &syms);
-	for (int i = 0; i < nsyms; i++) {
+									   keycode, &syms);
+	for (int i = 0; i < nsyms; i++)
+	{
 		xkb_keysym_t sym = syms[i];
-		if (sym == XKB_KEY_Escape) {
+		if (sym == XKB_KEY_Escape)
+		{
 			wl_display_terminate(sample->display);
 		}
 	}
 }
 
-static void keyboard_destroy_notify(struct wl_listener *listener, void *data) {
+static void keyboard_destroy_notify(struct wl_listener *listener, void *data)
+{
 	struct sample_keyboard *keyboard = wl_container_of(listener, keyboard, destroy);
 	wl_list_remove(&keyboard->destroy.link);
 	wl_list_remove(&keyboard->key.link);
 	free(keyboard);
 }
 
-static void new_input_notify(struct wl_listener *listener, void *data) {
+static void new_input_notify(struct wl_listener *listener, void *data)
+{
 	struct wlr_input_device *device = data;
-	struct sample_state *sample = wl_container_of(listener, sample, new_input);
-	switch (device->type) {
+	struct local_server *sample = wl_container_of(listener, sample, new_input);
+	switch (device->type)
+	{
 	case WLR_INPUT_DEVICE_KEYBOARD:;
 		struct sample_keyboard *keyboard = calloc(1, sizeof(*keyboard));
 		keyboard->wlr_keyboard = wlr_keyboard_from_input_device(device);
@@ -325,13 +370,15 @@ static void new_input_notify(struct wl_listener *listener, void *data) {
 		wl_signal_add(&keyboard->wlr_keyboard->events.key, &keyboard->key);
 		keyboard->key.notify = keyboard_key_notify;
 		struct xkb_context *context = xkb_context_new(XKB_CONTEXT_NO_FLAGS);
-		if (!context) {
+		if (!context)
+		{
 			wlr_log(WLR_ERROR, "Failed to create XKB context");
 			exit(1);
 		}
 		struct xkb_keymap *keymap = xkb_keymap_new_from_names(context, NULL,
-			XKB_KEYMAP_COMPILE_NO_FLAGS);
-		if (!keymap) {
+															  XKB_KEYMAP_COMPILE_NO_FLAGS);
+		if (!keymap)
+		{
 			wlr_log(WLR_ERROR, "Failed to create XKB keymap");
 			exit(1);
 		}
@@ -353,10 +400,8 @@ static void new_input_notify(struct wl_listener *listener, void *data) {
 		break;
 	case WLR_INPUT_DEVICE_TABLET:;
 		struct wlr_tablet *tablet = wlr_tablet_from_input_device(device);
-		sample->width_mm = tablet->width_mm == 0 ?
-			20 : tablet->width_mm;
-		sample->height_mm = tablet->height_mm == 0 ?
-			10 : tablet->height_mm;
+		sample->width_mm = tablet->width_mm == 0 ? 20 : tablet->width_mm;
+		sample->height_mm = tablet->height_mm == 0 ? 10 : tablet->height_mm;
 
 		struct tablet_tool_state *tstate = calloc(1, sizeof(*tstate));
 		tstate->wlr_tablet = tablet;
@@ -376,18 +421,19 @@ static void new_input_notify(struct wl_listener *listener, void *data) {
 	}
 }
 
-int main(int argc, char *argv[]) {
+int main(int argc, char *argv[])
+{
 	wlr_log_init(WLR_DEBUG, NULL);
 	struct wl_display *display = wl_display_create();
-	struct sample_state state = {
+	struct local_server state = {
 		.display = display,
-		.tool_color = { 1, 1, 1, 1 },
-		.pad_color = { 0.5, 0.5, 0.5, 1.0 }
-	};
+		.tool_color = {1, 1, 1, 1},
+		.pad_color = {0.5, 0.5, 0.5, 1.0}};
 	wl_list_init(&state.tablet_pads);
 	wl_list_init(&state.tablet_tools);
 	struct wlr_backend *wlr = wlr_backend_autocreate(wl_display_get_event_loop(display), NULL);
-	if (!wlr) {
+	if (!wlr)
+	{
 		exit(1);
 	}
 
@@ -398,14 +444,16 @@ int main(int argc, char *argv[]) {
 	clock_gettime(CLOCK_MONOTONIC, &state.last_frame);
 
 	state.renderer = wlr_renderer_autocreate(wlr);
-	if (!state.renderer) {
+	if (!state.renderer)
+	{
 		wlr_log(WLR_ERROR, "Could not start compositor, OOM");
 		exit(EXIT_FAILURE);
 	}
 
 	state.allocator = wlr_allocator_autocreate(wlr, state.renderer);
 
-	if (!wlr_backend_start(wlr)) {
+	if (!wlr_backend_start(wlr))
+	{
 		wlr_log(WLR_ERROR, "Failed to start backend");
 		wlr_backend_destroy(wlr);
 		exit(1);

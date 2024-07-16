@@ -18,7 +18,8 @@
 #include <xkbcommon/xkbcommon.h>
 #include "cat.h"
 
-struct sample_state {
+struct local_server
+{
 	struct wl_display *display;
 	struct wl_listener new_output;
 	struct wl_listener new_input;
@@ -30,8 +31,9 @@ struct sample_state {
 	enum wl_output_transform transform;
 };
 
-struct sample_output {
-	struct sample_state *sample;
+struct sample_output
+{
+	struct local_server *sample;
 	struct wlr_output *output;
 	struct wl_listener frame;
 	struct wl_listener destroy;
@@ -40,16 +42,18 @@ struct sample_output {
 	struct wl_list link;
 };
 
-struct sample_keyboard {
-	struct sample_state *sample;
+struct sample_keyboard
+{
+	struct local_server *sample;
 	struct wlr_keyboard *wlr_keyboard;
 	struct wl_listener key;
 	struct wl_listener destroy;
 };
 
-static void output_frame_notify(struct wl_listener *listener, void *data) {
+static void output_frame_notify(struct wl_listener *listener, void *data)
+{
 	struct sample_output *sample_output = wl_container_of(listener, sample_output, frame);
-	struct sample_state *sample = sample_output->sample;
+	struct local_server *sample = sample_output->sample;
 	struct wlr_output *wlr_output = sample_output->output;
 	struct timespec now;
 	clock_gettime(CLOCK_MONOTONIC, &now);
@@ -62,17 +66,19 @@ static void output_frame_notify(struct wl_listener *listener, void *data) {
 	struct wlr_render_pass *pass = wlr_output_begin_render_pass(wlr_output, &output_state, NULL, NULL);
 
 	wlr_render_pass_add_rect(pass, &(struct wlr_render_rect_options){
-		.box = { .width = wlr_output->width, .height = wlr_output->height },
-		.color = { 0.25, 0.25, 0.25, 1 },
-	});
+									   .box = {.width = wlr_output->width, .height = wlr_output->height},
+									   .color = {0.25, 0.25, 0.25, 1},
+								   });
 
-	for (int y = -128 + (int)sample_output->y_offs; y < height; y += 128) {
-		for (int x = -128 + (int)sample_output->x_offs; x < width; x += 128) {
+	for (int y = -128 + (int)sample_output->y_offs; y < height; y += 128)
+	{
+		for (int x = -128 + (int)sample_output->x_offs; x < width; x += 128)
+		{
 			wlr_render_pass_add_texture(pass, &(struct wlr_render_texture_options){
-				.texture = sample->cat_texture,
-				.dst_box = { .x = x, .y = y },
-				.transform = wlr_output->transform,
-			});
+												  .texture = sample->cat_texture,
+												  .dst_box = {.x = x, .y = y},
+												  .transform = wlr_output->transform,
+											  });
 		}
 	}
 
@@ -81,39 +87,45 @@ static void output_frame_notify(struct wl_listener *listener, void *data) {
 	wlr_output_state_finish(&output_state);
 
 	long ms = (now.tv_sec - sample->last_frame.tv_sec) * 1000 +
-		(now.tv_nsec - sample->last_frame.tv_nsec) / 1000000;
+			  (now.tv_nsec - sample->last_frame.tv_nsec) / 1000000;
 	float seconds = ms / 1000.0f;
 
 	sample_output->x_offs += sample_output->x_vel * seconds;
 	sample_output->y_offs += sample_output->y_vel * seconds;
-	if (sample_output->x_offs > 128) {
+	if (sample_output->x_offs > 128)
+	{
 		sample_output->x_offs = 0;
 	}
-	if (sample_output->y_offs > 128) {
+	if (sample_output->y_offs > 128)
+	{
 		sample_output->y_offs = 0;
 	}
 	sample->last_frame = now;
 }
 
-static void update_velocities(struct sample_state *sample,
-		float x_diff, float y_diff) {
+static void update_velocities(struct local_server *sample,
+							  float x_diff, float y_diff)
+{
 	struct sample_output *sample_output;
-	wl_list_for_each(sample_output, &sample->outputs, link) {
+	wl_list_for_each(sample_output, &sample->outputs, link)
+	{
 		sample_output->x_vel += x_diff;
 		sample_output->y_vel += y_diff;
 	}
 }
 
-static void output_remove_notify(struct wl_listener *listener, void *data) {
+static void output_remove_notify(struct wl_listener *listener, void *data)
+{
 	struct sample_output *sample_output = wl_container_of(listener, sample_output, destroy);
 	wl_list_remove(&sample_output->frame.link);
 	wl_list_remove(&sample_output->destroy.link);
 	free(sample_output);
 }
 
-static void new_output_notify(struct wl_listener *listener, void *data) {
+static void new_output_notify(struct wl_listener *listener, void *data)
+{
 	struct wlr_output *output = data;
-	struct sample_state *sample = wl_container_of(listener, sample, new_output);
+	struct local_server *sample = wl_container_of(listener, sample, new_output);
 
 	wlr_output_init_render(output, sample->allocator, sample->renderer);
 
@@ -134,56 +146,65 @@ static void new_output_notify(struct wl_listener *listener, void *data) {
 	wlr_output_state_set_transform(&state, sample->transform);
 	wlr_output_state_set_enabled(&state, true);
 	struct wlr_output_mode *mode = wlr_output_preferred_mode(output);
-	if (mode != NULL) {
+	if (mode != NULL)
+	{
 		wlr_output_state_set_mode(&state, mode);
 	}
 	wlr_output_commit_state(output, &state);
 	wlr_output_state_finish(&state);
 }
 
-static void keyboard_key_notify(struct wl_listener *listener, void *data) {
+static void keyboard_key_notify(struct wl_listener *listener, void *data)
+{
 	struct sample_keyboard *keyboard = wl_container_of(listener, keyboard, key);
-	struct sample_state *sample = keyboard->sample;
+	struct local_server *sample = keyboard->sample;
 	struct wlr_keyboard_key_event *event = data;
 	uint32_t keycode = event->keycode + 8;
 	const xkb_keysym_t *syms;
 	int nsyms = xkb_state_key_get_syms(keyboard->wlr_keyboard->xkb_state,
-			keycode, &syms);
-	for (int i = 0; i < nsyms; i++) {
+									   keycode, &syms);
+	for (int i = 0; i < nsyms; i++)
+	{
 		xkb_keysym_t sym = syms[i];
-		if (sym == XKB_KEY_Escape) {
+		if (sym == XKB_KEY_Escape)
+		{
 			wl_display_terminate(sample->display);
 		}
-		if (event->state == WL_KEYBOARD_KEY_STATE_PRESSED) {
-			switch (sym) {
+		if (event->state == WL_KEYBOARD_KEY_STATE_PRESSED)
+		{
+			switch (sym)
+			{
 			case XKB_KEY_Left:
 				update_velocities(sample, -16, 0);
 				break;
 			case XKB_KEY_Right:
 				update_velocities(sample, 16, 0);
 				break;
-	 	   	case XKB_KEY_Up:
-	 	   		update_velocities(sample, 0, -16);
-	 	   		break;
-	 	   	case XKB_KEY_Down:
+			case XKB_KEY_Up:
+				update_velocities(sample, 0, -16);
+				break;
+			case XKB_KEY_Down:
 				update_velocities(sample, 0, 16);
-	 	   		break;
-	   		}
+				break;
+			}
 		}
 	}
 }
 
-static void keyboard_destroy_notify(struct wl_listener *listener, void *data) {
+static void keyboard_destroy_notify(struct wl_listener *listener, void *data)
+{
 	struct sample_keyboard *keyboard = wl_container_of(listener, keyboard, destroy);
 	wl_list_remove(&keyboard->destroy.link);
 	wl_list_remove(&keyboard->key.link);
 	free(keyboard);
 }
 
-static void new_input_notify(struct wl_listener *listener, void *data) {
+static void new_input_notify(struct wl_listener *listener, void *data)
+{
 	struct wlr_input_device *device = data;
-	struct sample_state *sample = wl_container_of(listener, sample, new_input);
-	switch (device->type) {
+	struct local_server *sample = wl_container_of(listener, sample, new_input);
+	switch (device->type)
+	{
 	case WLR_INPUT_DEVICE_KEYBOARD:;
 		struct sample_keyboard *keyboard = calloc(1, sizeof(*keyboard));
 		keyboard->wlr_keyboard = wlr_keyboard_from_input_device(device);
@@ -193,13 +214,15 @@ static void new_input_notify(struct wl_listener *listener, void *data) {
 		wl_signal_add(&keyboard->wlr_keyboard->events.key, &keyboard->key);
 		keyboard->key.notify = keyboard_key_notify;
 		struct xkb_context *context = xkb_context_new(XKB_CONTEXT_NO_FLAGS);
-		if (!context) {
+		if (!context)
+		{
 			wlr_log(WLR_ERROR, "Failed to create XKB context");
 			exit(1);
 		}
 		struct xkb_keymap *keymap = xkb_keymap_new_from_names(context, NULL,
-			XKB_KEYMAP_COMPILE_NO_FLAGS);
-		if (!keymap) {
+															  XKB_KEYMAP_COMPILE_NO_FLAGS);
+		if (!keymap)
+		{
 			wlr_log(WLR_ERROR, "Failed to create XKB keymap");
 			exit(1);
 		}
@@ -212,28 +235,45 @@ static void new_input_notify(struct wl_listener *listener, void *data) {
 	}
 }
 
-
-int main(int argc, char *argv[]) {
+int main(int argc, char *argv[])
+{
 	int c;
 	enum wl_output_transform transform = WL_OUTPUT_TRANSFORM_NORMAL;
-	while ((c = getopt(argc, argv, "r:")) != -1) {
-		switch (c) {
+	while ((c = getopt(argc, argv, "r:")) != -1)
+	{
+		switch (c)
+		{
 		case 'r':
-			if (strcmp(optarg, "90") == 0) {
+			if (strcmp(optarg, "90") == 0)
+			{
 				transform = WL_OUTPUT_TRANSFORM_90;
-			} else if (strcmp(optarg, "180") == 0) {
+			}
+			else if (strcmp(optarg, "180") == 0)
+			{
 				transform = WL_OUTPUT_TRANSFORM_180;
-			} else if (strcmp(optarg, "270") == 0) {
+			}
+			else if (strcmp(optarg, "270") == 0)
+			{
 				transform = WL_OUTPUT_TRANSFORM_270;
-			} else if (strcmp(optarg, "flipped") == 0) {
+			}
+			else if (strcmp(optarg, "flipped") == 0)
+			{
 				transform = WL_OUTPUT_TRANSFORM_FLIPPED;
-			} else if (strcmp(optarg, "flipped-90") == 0) {
+			}
+			else if (strcmp(optarg, "flipped-90") == 0)
+			{
 				transform = WL_OUTPUT_TRANSFORM_FLIPPED_90;
-			} else if (strcmp(optarg, "flipped-180") == 0) {
+			}
+			else if (strcmp(optarg, "flipped-180") == 0)
+			{
 				transform = WL_OUTPUT_TRANSFORM_FLIPPED_180;
-			} else if (strcmp(optarg, "flipped-270") == 0) {
+			}
+			else if (strcmp(optarg, "flipped-270") == 0)
+			{
 				transform = WL_OUTPUT_TRANSFORM_FLIPPED_270;
-			} else {
+			}
+			else
+			{
 				wlr_log(WLR_ERROR, "got unknown transform value: %s", optarg);
 			}
 			break;
@@ -243,14 +283,14 @@ int main(int argc, char *argv[]) {
 	}
 	wlr_log_init(WLR_DEBUG, NULL);
 	struct wl_display *display = wl_display_create();
-	struct sample_state state = {
+	struct local_server state = {
 		.display = display,
-		.transform = transform
-	};
+		.transform = transform};
 	wl_list_init(&state.outputs);
 
 	struct wlr_backend *wlr = wlr_backend_autocreate(wl_display_get_event_loop(display), NULL);
-	if (!wlr) {
+	if (!wlr)
+	{
 		exit(1);
 	}
 
@@ -261,22 +301,25 @@ int main(int argc, char *argv[]) {
 	clock_gettime(CLOCK_MONOTONIC, &state.last_frame);
 
 	state.renderer = wlr_renderer_autocreate(wlr);
-	if (!state.renderer) {
+	if (!state.renderer)
+	{
 		wlr_log(WLR_ERROR, "Could not start compositor, OOM");
 		wlr_backend_destroy(wlr);
 		exit(EXIT_FAILURE);
 	}
 	state.cat_texture = wlr_texture_from_pixels(state.renderer,
-		DRM_FORMAT_ABGR8888, cat_tex.width * 4, cat_tex.width, cat_tex.height,
-		cat_tex.pixel_data);
-	if (!state.cat_texture) {
+												DRM_FORMAT_ABGR8888, cat_tex.width * 4, cat_tex.width, cat_tex.height,
+												cat_tex.pixel_data);
+	if (!state.cat_texture)
+	{
 		wlr_log(WLR_ERROR, "Could not start compositor, OOM");
 		exit(EXIT_FAILURE);
 	}
 
 	state.allocator = wlr_allocator_autocreate(wlr, state.renderer);
 
-	if (!wlr_backend_start(wlr)) {
+	if (!wlr_backend_start(wlr))
+	{
 		wlr_log(WLR_ERROR, "Failed to start backend");
 		wlr_backend_destroy(wlr);
 		exit(1);

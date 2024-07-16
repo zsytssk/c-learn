@@ -20,7 +20,8 @@
 #include <wlr/util/log.h>
 #include <xkbcommon/xkbcommon.h>
 
-struct sample_state {
+struct local_server
+{
 	struct wl_display *display;
 	struct compositor_state *compositor;
 	struct wlr_renderer *renderer;
@@ -53,36 +54,42 @@ struct sample_state {
 	struct wl_listener tablet_tool_button;
 };
 
-struct touch_point {
+struct touch_point
+{
 	int32_t touch_id;
 	double x, y;
 	struct wl_list link;
 };
 
-struct sample_output {
-	struct sample_state *state;
+struct sample_output
+{
+	struct local_server *state;
 	struct wlr_output *output;
 	struct wl_listener frame;
 	struct wl_listener destroy;
 };
 
-struct sample_keyboard {
-	struct sample_state *state;
+struct sample_keyboard
+{
+	struct local_server *state;
 	struct wlr_keyboard *wlr_keyboard;
 	struct wl_listener key;
 	struct wl_listener destroy;
 };
 
-static void warp_to_touch(struct sample_state *state,
-		struct wlr_input_device *dev) {
-	if (wl_list_empty(&state->touch_points)) {
+static void warp_to_touch(struct local_server *state,
+						  struct wlr_input_device *dev)
+{
+	if (wl_list_empty(&state->touch_points))
+	{
 		return;
 	}
 
 	double x = 0, y = 0;
 	size_t n = 0;
 	struct touch_point *point;
-	wl_list_for_each(point, &state->touch_points, link) {
+	wl_list_for_each(point, &state->touch_points, link)
+	{
 		x += point->x;
 		y += point->y;
 		n++;
@@ -92,9 +99,10 @@ static void warp_to_touch(struct sample_state *state,
 	wlr_cursor_warp_absolute(state->cursor, dev, x, y);
 }
 
-static void output_frame_notify(struct wl_listener *listener, void *data) {
+static void output_frame_notify(struct wl_listener *listener, void *data)
+{
 	struct sample_output *sample_output = wl_container_of(listener, sample_output, frame);
-	struct sample_state *state = sample_output->state;
+	struct local_server *state = sample_output->state;
 	struct wlr_output *wlr_output = sample_output->output;
 	struct wlr_renderer *renderer = state->renderer;
 	assert(renderer);
@@ -103,31 +111,33 @@ static void output_frame_notify(struct wl_listener *listener, void *data) {
 	wlr_output_state_init(&output_state);
 	struct wlr_render_pass *pass = wlr_output_begin_render_pass(wlr_output, &output_state, NULL, NULL);
 	wlr_render_pass_add_rect(pass, &(struct wlr_render_rect_options){
-		.box = { .width = wlr_output->width, .height = wlr_output->height },
-		.color = {
-			state->clear_color[0],
-			state->clear_color[1],
-			state->clear_color[2],
-			state->clear_color[3],
-		},
-	});
+									   .box = {.width = wlr_output->width, .height = wlr_output->height},
+									   .color = {
+										   state->clear_color[0],
+										   state->clear_color[1],
+										   state->clear_color[2],
+										   state->clear_color[3],
+									   },
+								   });
 	wlr_output_add_software_cursors_to_render_pass(wlr_output, pass, NULL);
 	wlr_render_pass_submit(pass);
 	wlr_output_commit_state(wlr_output, &output_state);
 	wlr_output_state_finish(&output_state);
 }
 
-static void handle_cursor_motion(struct wl_listener *listener, void *data) {
-	struct sample_state *sample =
+static void handle_cursor_motion(struct wl_listener *listener, void *data)
+{
+	struct local_server *sample =
 		wl_container_of(listener, sample, cursor_motion);
 	struct wlr_pointer_motion_event *event = data;
 	wlr_cursor_move(sample->cursor, &event->pointer->base, event->delta_x,
-			event->delta_y);
+					event->delta_y);
 }
 
 static void handle_cursor_motion_absolute(struct wl_listener *listener,
-		void *data) {
-	struct sample_state *sample =
+										  void *data)
+{
+	struct local_server *sample =
 		wl_container_of(listener, sample, cursor_motion_absolute);
 	struct wlr_pointer_motion_absolute_event *event = data;
 
@@ -135,52 +145,63 @@ static void handle_cursor_motion_absolute(struct wl_listener *listener,
 	sample->cur_y = event->y;
 
 	wlr_cursor_warp_absolute(sample->cursor, &event->pointer->base,
-		sample->cur_x, sample->cur_y);
+							 sample->cur_x, sample->cur_y);
 }
 
-static void handle_cursor_button(struct wl_listener *listener, void *data) {
-	struct sample_state *sample =
+static void handle_cursor_button(struct wl_listener *listener, void *data)
+{
+	struct local_server *sample =
 		wl_container_of(listener, sample, cursor_button);
 	struct wlr_pointer_button_event *event = data;
 
-	float (*color)[4];
-	if (event->state == WL_POINTER_BUTTON_STATE_RELEASED) {
+	float(*color)[4];
+	if (event->state == WL_POINTER_BUTTON_STATE_RELEASED)
+	{
 		color = &sample->default_color;
 		memcpy(&sample->clear_color, color, sizeof(*color));
-	} else {
-		float red[4] = { 0.25f, 0.25f, 0.25f, 1 };
+	}
+	else
+	{
+		float red[4] = {0.25f, 0.25f, 0.25f, 1};
 		red[event->button % 3] = 1;
 		color = &red;
 		memcpy(&sample->clear_color, color, sizeof(*color));
 	}
 }
 
-static void handle_cursor_axis(struct wl_listener *listener, void *data) {
-	struct sample_state *sample =
+static void handle_cursor_axis(struct wl_listener *listener, void *data)
+{
+	struct local_server *sample =
 		wl_container_of(listener, sample, cursor_axis);
 	struct wlr_pointer_axis_event *event = data;
 
-	for (size_t i = 0; i < 3; ++i) {
+	for (size_t i = 0; i < 3; ++i)
+	{
 		sample->default_color[i] += event->delta > 0 ? -0.05f : 0.05f;
-		if (sample->default_color[i] > 1.0f) {
+		if (sample->default_color[i] > 1.0f)
+		{
 			sample->default_color[i] = 1.0f;
 		}
-		if (sample->default_color[i] < 0.0f) {
+		if (sample->default_color[i] < 0.0f)
+		{
 			sample->default_color[i] = 0.0f;
 		}
 	}
 
 	memcpy(&sample->clear_color, &sample->default_color,
-			sizeof(sample->clear_color));
+		   sizeof(sample->clear_color));
 }
 
-static void handle_touch_up(struct wl_listener *listener, void *data) {
-	struct sample_state *sample = wl_container_of(listener, sample, touch_up);
-	struct wlr_touch_up_event  *event = data;
+static void handle_touch_up(struct wl_listener *listener, void *data)
+{
+	struct local_server *sample = wl_container_of(listener, sample, touch_up);
+	struct wlr_touch_up_event *event = data;
 
 	struct touch_point *point, *tmp;
-	wl_list_for_each_safe(point, tmp, &sample->touch_points, link) {
-		if (point->touch_id == event->touch_id) {
+	wl_list_for_each_safe(point, tmp, &sample->touch_points, link)
+	{
+		if (point->touch_id == event->touch_id)
+		{
 			wl_list_remove(&point->link);
 			break;
 		}
@@ -189,9 +210,10 @@ static void handle_touch_up(struct wl_listener *listener, void *data) {
 	warp_to_touch(sample, &event->touch->base);
 }
 
-static void handle_touch_down(struct wl_listener *listener, void *data) {
-	struct sample_state *sample = wl_container_of(listener, sample, touch_down);
-	struct wlr_touch_down_event  *event = data;
+static void handle_touch_down(struct wl_listener *listener, void *data)
+{
+	struct local_server *sample = wl_container_of(listener, sample, touch_down);
+	struct wlr_touch_down_event *event = data;
 	struct touch_point *point = calloc(1, sizeof(*point));
 	point->touch_id = event->touch_id;
 	point->x = event->x;
@@ -201,14 +223,17 @@ static void handle_touch_down(struct wl_listener *listener, void *data) {
 	warp_to_touch(sample, &event->touch->base);
 }
 
-static void handle_touch_motion(struct wl_listener *listener, void *data) {
-	struct sample_state *sample =
+static void handle_touch_motion(struct wl_listener *listener, void *data)
+{
+	struct local_server *sample =
 		wl_container_of(listener, sample, touch_motion);
-	struct wlr_touch_motion_event  *event = data;
+	struct wlr_touch_motion_event *event = data;
 
 	struct touch_point *point;
-	wl_list_for_each(point, &sample->touch_points, link) {
-		if (point->touch_id == event->touch_id) {
+	wl_list_for_each(point, &sample->touch_points, link)
+	{
+		if (point->touch_id == event->touch_id)
+		{
 			point->x = event->x;
 			point->y = event->y;
 			break;
@@ -218,49 +243,57 @@ static void handle_touch_motion(struct wl_listener *listener, void *data) {
 	warp_to_touch(sample, &event->touch->base);
 }
 
-static void handle_touch_cancel(struct wl_listener *listener, void *data) {
+static void handle_touch_cancel(struct wl_listener *listener, void *data)
+{
 	wlr_log(WLR_DEBUG, "TODO: touch cancel");
 }
 
-static void handle_tablet_tool_axis(struct wl_listener *listener, void *data) {
-	struct sample_state *sample =
+static void handle_tablet_tool_axis(struct wl_listener *listener, void *data)
+{
+	struct local_server *sample =
 		wl_container_of(listener, sample, tablet_tool_axis);
 	struct wlr_tablet_tool_axis_event *event = data;
 	if ((event->updated_axes & WLR_TABLET_TOOL_AXIS_X) &&
-			(event->updated_axes & WLR_TABLET_TOOL_AXIS_Y)) {
+		(event->updated_axes & WLR_TABLET_TOOL_AXIS_Y))
+	{
 		wlr_cursor_warp_absolute(sample->cursor, &event->tablet->base,
-			event->x, event->y);
+								 event->x, event->y);
 	}
 }
 
-static void keyboard_key_notify(struct wl_listener *listener, void *data) {
+static void keyboard_key_notify(struct wl_listener *listener, void *data)
+{
 	struct sample_keyboard *keyboard = wl_container_of(listener, keyboard, key);
-	struct sample_state *sample = keyboard->state;
+	struct local_server *sample = keyboard->state;
 	struct wlr_keyboard_key_event *event = data;
 	uint32_t keycode = event->keycode + 8;
 	const xkb_keysym_t *syms;
 	int nsyms = xkb_state_key_get_syms(keyboard->wlr_keyboard->xkb_state,
-			keycode, &syms);
-	for (int i = 0; i < nsyms; i++) {
+									   keycode, &syms);
+	for (int i = 0; i < nsyms; i++)
+	{
 		xkb_keysym_t sym = syms[i];
-		if (sym == XKB_KEY_Escape) {
+		if (sym == XKB_KEY_Escape)
+		{
 			wl_display_terminate(sample->display);
 		}
 	}
 }
 
-static void output_remove_notify(struct wl_listener *listener, void *data) {
+static void output_remove_notify(struct wl_listener *listener, void *data)
+{
 	struct sample_output *sample_output = wl_container_of(listener, sample_output, destroy);
-	struct sample_state *sample = sample_output->state;
+	struct local_server *sample = sample_output->state;
 	wlr_output_layout_remove(sample->layout, sample_output->output);
 	wl_list_remove(&sample_output->frame.link);
 	wl_list_remove(&sample_output->destroy.link);
 	free(sample_output);
 }
 
-static void new_output_notify(struct wl_listener *listener, void *data) {
+static void new_output_notify(struct wl_listener *listener, void *data)
+{
 	struct wlr_output *output = data;
-	struct sample_state *sample = wl_container_of(listener, sample, new_output);
+	struct local_server *sample = wl_container_of(listener, sample, new_output);
 
 	wlr_output_init_render(output, sample->allocator, sample->renderer);
 
@@ -277,25 +310,28 @@ static void new_output_notify(struct wl_listener *listener, void *data) {
 	wlr_output_state_init(&state);
 	wlr_output_state_set_enabled(&state, true);
 	struct wlr_output_mode *mode = wlr_output_preferred_mode(output);
-	if (mode != NULL) {
+	if (mode != NULL)
+	{
 		wlr_output_state_set_mode(&state, mode);
 	}
 	wlr_output_commit_state(output, &state);
 	wlr_output_state_finish(&state);
 }
 
-
-static void keyboard_destroy_notify(struct wl_listener *listener, void *data) {
+static void keyboard_destroy_notify(struct wl_listener *listener, void *data)
+{
 	struct sample_keyboard *keyboard = wl_container_of(listener, keyboard, destroy);
 	wl_list_remove(&keyboard->destroy.link);
 	wl_list_remove(&keyboard->key.link);
 	free(keyboard);
 }
 
-static void new_input_notify(struct wl_listener *listener, void *data) {
+static void new_input_notify(struct wl_listener *listener, void *data)
+{
 	struct wlr_input_device *device = data;
-	struct sample_state *state = wl_container_of(listener, state, new_input);
-	switch (device->type) {
+	struct local_server *state = wl_container_of(listener, state, new_input);
+	switch (device->type)
+	{
 	case WLR_INPUT_DEVICE_POINTER:
 	case WLR_INPUT_DEVICE_TOUCH:
 	case WLR_INPUT_DEVICE_TABLET:
@@ -311,13 +347,15 @@ static void new_input_notify(struct wl_listener *listener, void *data) {
 		wl_signal_add(&keyboard->wlr_keyboard->events.key, &keyboard->key);
 		keyboard->key.notify = keyboard_key_notify;
 		struct xkb_context *context = xkb_context_new(XKB_CONTEXT_NO_FLAGS);
-		if (!context) {
+		if (!context)
+		{
 			wlr_log(WLR_ERROR, "Failed to create XKB context");
 			exit(1);
 		}
 		struct xkb_keymap *keymap = xkb_keymap_new_from_names(context, NULL,
-			XKB_KEYMAP_COMPILE_NO_FLAGS);
-		if (!keymap) {
+															  XKB_KEYMAP_COMPILE_NO_FLAGS);
+		if (!keymap)
+		{
 			wlr_log(WLR_ERROR, "Failed to create XKB keymap");
 			exit(1);
 		}
@@ -330,18 +368,18 @@ static void new_input_notify(struct wl_listener *listener, void *data) {
 	}
 }
 
-
-int main(int argc, char *argv[]) {
+int main(int argc, char *argv[])
+{
 	wlr_log_init(WLR_DEBUG, NULL);
 	struct wl_display *display = wl_display_create();
-	struct sample_state state = {
-		.default_color = { 0.25f, 0.25f, 0.25f, 1 },
-		.clear_color = { 0.25f, 0.25f, 0.25f, 1 },
-		.display = display
-	};
+	struct local_server state = {
+		.default_color = {0.25f, 0.25f, 0.25f, 1},
+		.clear_color = {0.25f, 0.25f, 0.25f, 1},
+		.display = display};
 
 	struct wlr_backend *wlr = wlr_backend_autocreate(wl_display_get_event_loop(display), NULL);
-	if (!wlr) {
+	if (!wlr)
+	{
 		exit(1);
 	}
 
@@ -351,7 +389,7 @@ int main(int argc, char *argv[]) {
 	state.cursor = wlr_cursor_create();
 	state.layout = wlr_output_layout_create(display);
 	wlr_cursor_attach_output_layout(state.cursor, state.layout);
-	//wlr_cursor_map_to_region(state.cursor, state.config->cursor.mapped_box);
+	// wlr_cursor_map_to_region(state.cursor, state.config->cursor.mapped_box);
 	wl_list_init(&state.devices);
 	wl_list_init(&state.touch_points);
 
@@ -360,7 +398,7 @@ int main(int argc, char *argv[]) {
 	state.cursor_motion.notify = handle_cursor_motion;
 
 	wl_signal_add(&state.cursor->events.motion_absolute,
-		&state.cursor_motion_absolute);
+				  &state.cursor_motion_absolute);
 	state.cursor_motion_absolute.notify = handle_cursor_motion_absolute;
 
 	wl_signal_add(&state.cursor->events.button, &state.cursor_button);
@@ -390,11 +428,12 @@ int main(int argc, char *argv[]) {
 
 	// tool events
 	wl_signal_add(&state.cursor->events.tablet_tool_axis,
-		&state.tablet_tool_axis);
+				  &state.tablet_tool_axis);
 	state.tablet_tool_axis.notify = handle_tablet_tool_axis;
 
 	state.xcursor_manager = wlr_xcursor_manager_create(NULL, 24);
-	if (!state.xcursor_manager) {
+	if (!state.xcursor_manager)
+	{
 		wlr_log(WLR_ERROR, "Failed to load default cursor");
 		return 1;
 	}
@@ -403,7 +442,8 @@ int main(int argc, char *argv[]) {
 
 	clock_gettime(CLOCK_MONOTONIC, &state.last_frame);
 
-	if (!wlr_backend_start(wlr)) {
+	if (!wlr_backend_start(wlr))
+	{
 		wlr_log(WLR_ERROR, "Failed to start backend");
 		wlr_backend_destroy(wlr);
 		exit(1);

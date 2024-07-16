@@ -15,33 +15,20 @@
 #include <wlr/util/log.h>
 #include <xkbcommon/xkbcommon.h>
 #include <unistd.h>
-
 #include <wlr/types/wlr_compositor.h>
 #include <wlr/types/wlr_data_device.h>
 #include <wlr/types/wlr_subcompositor.h>
-#include <wlr/types/wlr_cursor.h>
-
-#include <wlr/types/wlr_output_layout.h>
-#include <wlr/types/wlr_scene.h>
 
 struct local_server
 {
     struct wl_display *wl_display;
-    struct wlr_backend *backend;
+    struct wl_listener new_output;
     struct wl_listener new_input;
     struct wlr_renderer *renderer;
     struct wlr_allocator *allocator;
     struct timespec last_frame;
-
-    struct wlr_scene *scene;
-    struct wlr_scene_output_layout *scene_layout;
-
-    struct wlr_output_layout *output_layout;
-    struct wl_list outputs;
-    struct wl_listener new_output;
-
-    struct wlr_cursor *cursor;
-    struct wlr_xcursor_manager *cursor_mgr;
+    float color[4];
+    int dec;
 };
 
 struct sample_output
@@ -70,8 +57,34 @@ static void output_frame_notify(struct wl_listener *listener, void *data)
     struct timespec now;
     clock_gettime(CLOCK_MONOTONIC, &now);
 
+    long ms = (now.tv_sec - sample->last_frame.tv_sec) * 1000 +
+              (now.tv_nsec - sample->last_frame.tv_nsec) / 1000000;
+    int inc = (sample->dec + 1) % 3;
+
+    // sample->color[inc] += ms / 2000.0f;
+    // sample->color[sample->dec] -= ms / 2000.0f;
+
+    // if (sample->color[sample->dec] < 0.0f)
+    // {
+    //     sample->color[inc] = 1.0f;
+    //     sample->color[sample->dec] = 0.0f;
+    //     sample->dec = inc;
+    // }
+
     struct wlr_output_state state;
     wlr_output_state_init(&state);
+
+    struct wlr_render_pass *pass = wlr_output_begin_render_pass(wlr_output, &state, NULL, NULL);
+    wlr_render_pass_add_rect(pass, &(struct wlr_render_rect_options){
+                                       .box = {.width = wlr_output->width, .height = wlr_output->height},
+                                       .color = {
+                                           .r = sample->color[0],
+                                           .g = sample->color[1],
+                                           .b = sample->color[2],
+                                           .a = sample->color[3],
+                                       },
+                                   });
+    wlr_render_pass_submit(pass);
 
     wlr_output_commit_state(wlr_output, &state);
     wlr_output_state_finish(&state);
@@ -197,47 +210,34 @@ int main(void)
     wlr_log_init(WLR_DEBUG, NULL);
     struct wl_display *wl_display = wl_display_create();
     struct local_server server = {
+        .color = {1.0, 0.0, 0.0, 1.0},
+        .dec = 0,
         .last_frame = {0},
         .wl_display = wl_display};
 
-    server.backend = wlr_backend_autocreate(wl_display_get_event_loop(wl_display), NULL);
-    if (!server.backend)
+    struct wlr_backend *backend = wlr_backend_autocreate(wl_display_get_event_loop(wl_display), NULL);
+    if (!backend)
     {
         wlr_log(WLR_ERROR, "failed to create wlr_backend");
         exit(1);
     }
 
-    server.renderer = wlr_renderer_autocreate(server.backend);
-    wlr_renderer_init_wl_display(server.renderer, server.wl_display);
+    server.renderer = wlr_renderer_autocreate(backend);
+    server.allocator = wlr_allocator_autocreate(backend, server.renderer);
 
-    server.allocator = wlr_allocator_autocreate(server.backend, server.renderer);
-    wlr_compositor_create(server.wl_display, 5, server.renderer);
-    wlr_subcompositor_create(server.wl_display);
-    wlr_data_device_manager_create(server.wl_display);
-
-    server.output_layout = wlr_output_layout_create(server.wl_display);
-    wl_list_init(&server.outputs);
-    server.scene = wlr_scene_create();
-    server.scene_layout = wlr_scene_attach_output_layout(server.scene, server.output_layout);
-
-    wl_signal_add(&server.backend->events.new_output, &server.new_output);
+    wl_signal_add(&backend->events.new_output, &server.new_output);
     server.new_output.notify = new_output_notify;
-    wl_signal_add(&server.backend->events.new_input, &server.new_input);
+    wl_signal_add(&backend->events.new_input, &server.new_input);
     server.new_input.notify = new_input_notify;
 
     clock_gettime(CLOCK_MONOTONIC, &server.last_frame);
 
-    if (!wlr_backend_start(server.backend))
+    if (!wlr_backend_start(backend))
     {
         wlr_log(WLR_ERROR, "Failed to start backend");
-        wlr_backend_destroy(server.backend);
+        wlr_backend_destroy(backend);
         exit(1);
     }
     wl_display_run(server.wl_display);
-
-    wlr_scene_node_destroy(&server.scene->tree.node);
-    wlr_allocator_destroy(server.allocator);
-    wlr_renderer_destroy(server.renderer);
-    wlr_backend_destroy(server.backend);
     wl_display_destroy(server.wl_display);
 }

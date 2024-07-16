@@ -47,4 +47,14 @@ xkb_context_unref(context);
   - 内存管理, wlr_output_init_render 需要
 
 - wlr_xdg_toplevel
+
   - 处理窗口的事件 -> 最大化 最小化...
+
+- wlr_seat
+
+  - 输入设备:鼠标键盘等
+
+- wl_data <复制粘贴 | 拖拽> 数据
+  - wl_data_device_manager | wl_data_source | wl_data_source.offer | wl_data_offer.offer
+  - wl_data_offer.receive | wl_data_source.send
+  - wl_data_device.start_drag

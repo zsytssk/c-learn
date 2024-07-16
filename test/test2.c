@@ -1,77 +1,52 @@
-#include <wlr/backend.h>
-#include <wlr/render/wlr_renderer.h>
-#include <wlr/types/wlr_output.h>
-#include <wlr/util/log.h>
-#include <wlr/render/wlr_render_pass.h>
-#include <wlr/types/wlr_output_damage.h>
+#include <wayland-server.h>
+#include <stdio.h>
 
-void render_frame(struct wlr_output *output)
+// 全局对象注册处理
+static void registry_handle_global(void *data, struct wl_registry *registry, uint32_t name,
+                                   const char *interface, uint32_t version)
 {
-    struct wlr_renderer *renderer = wlr_renderer_autocreate(output->backend);
-    struct wlr_allocator *allocator = wlr_allocator_autocreate(output->backend, renderer);
-
-    if (!renderer || !allocator)
-    {
-        wlr_log(WLR_ERROR, "Failed to get renderer or allocator");
-        return;
-    }
-
-    struct wlr_output_damage *output_damage = wlr_output_damage_create(output);
-    struct pixman_region32 damage;
-    pixman_region32_init(&damage);
-
-    if (!wlr_output_damage_attach_render(output_damage, &damage))
-    {
-        wlr_log(WLR_ERROR, "Failed to attach render");
-        return;
-    }
-
-    struct wlr_render_pass *pass = wlr_output_begin_render_pass(output, &damage, NULL);
-    if (pass == NULL)
-    {
-        wlr_log(WLR_ERROR, "Failed to begin render pass");
-        return;
-    }
-
-    // Clear the frame buffer
-    float color[4] = {0.1f, 0.2f, 0.3f, 1.0f};
-    wlr_render_pass_add_rect(pass, &(struct wlr_render_rect_options){
-                                       .box = {
-                                           .x = 0,
-                                           .y = 0,
-                                           .width = output->width,
-                                           .height = output->height,
-                                       },
-                                       .color = color,
-                                   });
-
-    // Commit the render pass
-    wlr_render_pass_end(pass);
-
-    // Commit the output frame
-    wlr_output_commit(output);
-
-    pixman_region32_fini(&damage);
+    printf("Global object registered: name=%d, interface=%s, version=%d\n", name, interface, version);
 }
+
+// 客户端连接处理
+static void handle_new_client(void *data, struct wl_client *client)
+{
+    printf("New client connected: id=%d\n", client->id);
+
+    // 创建注册表对象
+    struct wl_registry *registry = wl_display_get_registry(client->display);
+    if (registry)
+    {
+        // 添加全局对象注册监听器
+        wl_registry_add_listener(registry, &registry_listener, NULL);
+    }
+}
+
+// 注册表监听器
+static const struct wl_registry_listener registry_listener = {
+    registry_handle_global,
+    NULL};
 
 int main()
 {
+    // 创建 Wayland 显示服务器
     struct wl_display *display = wl_display_create();
-    struct wlr_backend *backend = wlr_backend_autocreate(display);
-    if (!backend)
+    if (!display)
     {
-        wlr_log(WLR_ERROR, "Failed to create backend");
+        fprintf(stderr, "Failed to create Wayland display\n");
         return 1;
     }
 
-    struct wlr_output *output; // 假设你已经有了输出设备
-    render_frame(output);
+    // 设置客户端连接事件监听器
+    wl_display_add_new_client_listener(display, handle_new_client, NULL);
 
-    // 运行 Wayland 显示服务器事件循环
-    wl_display_run(display);
+    // 运行 Wayland 事件循环
+    while (wl_display_dispatch(display) != -1)
+    {
+        // 处理事件
+    }
 
-    // 清理资源
-    wlr_backend_destroy(backend);
+    // 销毁 Wayland 显示服务器
     wl_display_destroy(display);
 
     return 0;

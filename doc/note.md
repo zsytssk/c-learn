@@ -12,7 +12,25 @@ https://wayland.freedesktop.org/docs/html/ch04.html
 
 ## 2024-07-01 15:13:10
 
+- @ques 为什么 sample 显示有问题
+
+  - 因为没有合适的渲染
+
+- @ques tinywl 中的大小自定义是如何做到的
+
+  - 也许是一大堆代码综合作用的
+  - `server.output_layout`
+
+- @ques `events.motion` vs `events.motion_absolute`
+
+- @ques `server.renderer` 这个 renderer 是干嘛的
+
+  - 创建 `allocator` `compositor`
+  - `wlr_renderer_init_wl_display` -> `wlr_renderer_init_wl_shm` ...
+
 - @ques `wlroots` 调用都是 server 的接口, 他的全部功能是如何实现的?
+
+  - 这应该太复杂了
 
 - @ques `wl_compositor_interface`
 

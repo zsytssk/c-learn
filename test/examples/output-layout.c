@@ -21,7 +21,8 @@
 #include <xkbcommon/xkbcommon.h>
 #include "cat.h"
 
-struct sample_state {
+struct local_server
+{
 	struct wl_display *display;
 	struct wl_listener new_output;
 	struct wl_listener new_input;
@@ -34,30 +35,34 @@ struct sample_state {
 	struct timespec ts_last;
 };
 
-struct sample_output {
-	struct sample_state *sample;
+struct sample_output
+{
+	struct local_server *sample;
 	struct wlr_output *output;
 	struct wl_listener frame;
 	struct wl_listener destroy;
 };
 
-struct sample_keyboard {
-	struct sample_state *sample;
+struct sample_keyboard
+{
+	struct local_server *sample;
 	struct wlr_keyboard *wlr_keyboard;
 	struct wl_listener key;
 	struct wl_listener destroy;
 };
 
-static void animate_cat(struct sample_state *sample,
-		struct wlr_output *output) {
+static void animate_cat(struct local_server *sample,
+						struct wlr_output *output)
+{
 	struct timespec ts;
 	clock_gettime(CLOCK_MONOTONIC, &ts);
 	long ms = (ts.tv_sec - sample->ts_last.tv_sec) * 1000 +
-		(ts.tv_nsec - sample->ts_last.tv_nsec) / 1000000;
+			  (ts.tv_nsec - sample->ts_last.tv_nsec) / 1000000;
 	// how many seconds have passed since the last time we animated
 	float seconds = ms / 1000.0f;
 
-	if (seconds > 0.1f) {
+	if (seconds > 0.1f)
+	{
 		// XXX when we switch vt, the rendering loop stops so try to detect
 		// that and pause when it happens.
 		seconds = 0.0f;
@@ -65,39 +70,54 @@ static void animate_cat(struct sample_state *sample,
 
 	// check for collisions and bounce
 	bool ur_collision = !wlr_output_layout_output_at(sample->layout,
-			sample->x_offs + 128, sample->y_offs);
+													 sample->x_offs + 128, sample->y_offs);
 	bool ul_collision = !wlr_output_layout_output_at(sample->layout,
-			sample->x_offs, sample->y_offs);
+													 sample->x_offs, sample->y_offs);
 	bool ll_collision = !wlr_output_layout_output_at(sample->layout,
-			sample->x_offs, sample->y_offs + 128);
+													 sample->x_offs, sample->y_offs + 128);
 	bool lr_collision = !wlr_output_layout_output_at(sample->layout,
-			sample->x_offs + 128, sample->y_offs + 128);
+													 sample->x_offs + 128, sample->y_offs + 128);
 
-	if (ur_collision && ul_collision && ll_collision && lr_collision) {
+	if (ur_collision && ul_collision && ll_collision && lr_collision)
+	{
 		// oops we went off the screen somehow
 		struct wlr_output_layout_output *l_output =
 			wlr_output_layout_get(sample->layout, output);
 		sample->x_offs = l_output->x + 20;
 		sample->y_offs = l_output->y + 20;
-	} else if (ur_collision && ul_collision) {
+	}
+	else if (ur_collision && ul_collision)
+	{
 		sample->y_vel = fabs(sample->y_vel);
-	} else if (lr_collision && ll_collision) {
+	}
+	else if (lr_collision && ll_collision)
+	{
 		sample->y_vel = -fabs(sample->y_vel);
-	} else if (ll_collision && ul_collision) {
+	}
+	else if (ll_collision && ul_collision)
+	{
 		sample->x_vel = fabs(sample->x_vel);
-	} else if (ur_collision && lr_collision) {
+	}
+	else if (ur_collision && lr_collision)
+	{
 		sample->x_vel = -fabs(sample->x_vel);
-	} else {
-		if (ur_collision || lr_collision) {
+	}
+	else
+	{
+		if (ur_collision || lr_collision)
+		{
 			sample->x_vel = -fabs(sample->x_vel);
 		}
-		if (ul_collision || ll_collision) {
+		if (ul_collision || ll_collision)
+		{
 			sample->x_vel = fabs(sample->x_vel);
 		}
-		if (ul_collision || ur_collision) {
+		if (ul_collision || ur_collision)
+		{
 			sample->y_vel = fabs(sample->y_vel);
 		}
-		if (ll_collision || lr_collision) {
+		if (ll_collision || lr_collision)
+		{
 			sample->y_vel = -fabs(sample->y_vel);
 		}
 	}
@@ -107,9 +127,10 @@ static void animate_cat(struct sample_state *sample,
 	sample->ts_last = ts;
 }
 
-static void output_frame_notify(struct wl_listener *listener, void *data) {
+static void output_frame_notify(struct wl_listener *listener, void *data)
+{
 	struct sample_output *output = wl_container_of(listener, output, frame);
-	struct sample_state *sample = output->sample;
+	struct local_server *sample = output->sample;
 	struct wlr_output *wlr_output = output->output;
 
 	struct wlr_output_state output_state;
@@ -117,27 +138,30 @@ static void output_frame_notify(struct wl_listener *listener, void *data) {
 	struct wlr_render_pass *pass = wlr_output_begin_render_pass(wlr_output, &output_state, NULL, NULL);
 
 	wlr_render_pass_add_rect(pass, &(struct wlr_render_rect_options){
-		.box = { .width = wlr_output->width, .height = wlr_output->height },
-		.color = { 0.25, 0.25, 0.25, 1 },
-	});
+									   .box = {.width = wlr_output->width, .height = wlr_output->height},
+									   .color = {0.25, 0.25, 0.25, 1},
+								   });
 
 	animate_cat(sample, output->output);
 
 	struct wlr_box box = {
-		.x = sample->x_offs, .y = sample->y_offs,
-		.width = 128, .height = 128,
+		.x = sample->x_offs,
+		.y = sample->y_offs,
+		.width = 128,
+		.height = 128,
 	};
-	if (wlr_output_layout_intersects(sample->layout, output->output, &box)) {
+	if (wlr_output_layout_intersects(sample->layout, output->output, &box))
+	{
 		// transform global coordinates to local coordinates
 		double local_x = sample->x_offs;
 		double local_y = sample->y_offs;
 		wlr_output_layout_output_coords(sample->layout, output->output,
-			&local_x, &local_y);
+										&local_x, &local_y);
 
 		wlr_render_pass_add_texture(pass, &(struct wlr_render_texture_options){
-			.texture = sample->cat_texture,
-			.dst_box = box,
-		});
+											  .texture = sample->cat_texture,
+											  .dst_box = box,
+										  });
 	}
 
 	wlr_render_pass_submit(pass);
@@ -145,24 +169,27 @@ static void output_frame_notify(struct wl_listener *listener, void *data) {
 	wlr_output_state_finish(&output_state);
 }
 
-static void update_velocities(struct sample_state *sample,
-		float x_diff, float y_diff) {
+static void update_velocities(struct local_server *sample,
+							  float x_diff, float y_diff)
+{
 	sample->x_vel += x_diff;
 	sample->y_vel += y_diff;
 }
 
-static void output_remove_notify(struct wl_listener *listener, void *data) {
+static void output_remove_notify(struct wl_listener *listener, void *data)
+{
 	struct sample_output *sample_output = wl_container_of(listener, sample_output, destroy);
-	struct sample_state *sample = sample_output->sample;
+	struct local_server *sample = sample_output->sample;
 	wlr_output_layout_remove(sample->layout, sample_output->output);
 	wl_list_remove(&sample_output->frame.link);
 	wl_list_remove(&sample_output->destroy.link);
 	free(sample_output);
 }
 
-static void new_output_notify(struct wl_listener *listener, void *data) {
+static void new_output_notify(struct wl_listener *listener, void *data)
+{
 	struct wlr_output *output = data;
-	struct sample_state *sample = wl_container_of(listener, sample, new_output);
+	struct local_server *sample = wl_container_of(listener, sample, new_output);
 
 	wlr_output_init_render(output, sample->allocator, sample->renderer);
 
@@ -179,32 +206,38 @@ static void new_output_notify(struct wl_listener *listener, void *data) {
 	wlr_output_state_init(&state);
 	wlr_output_state_set_enabled(&state, true);
 	struct wlr_output_mode *mode = wlr_output_preferred_mode(output);
-	if (mode != NULL) {
+	if (mode != NULL)
+	{
 		wlr_output_state_set_mode(&state, mode);
 	}
 	wlr_output_commit_state(output, &state);
 	wlr_output_state_finish(&state);
 }
 
-static void keyboard_key_notify(struct wl_listener *listener, void *data) {
+static void keyboard_key_notify(struct wl_listener *listener, void *data)
+{
 	struct sample_keyboard *keyboard = wl_container_of(listener, keyboard, key);
-	struct sample_state *sample = keyboard->sample;
+	struct local_server *sample = keyboard->sample;
 	struct wlr_keyboard_key_event *event = data;
 	uint32_t keycode = event->keycode + 8;
 	const xkb_keysym_t *syms;
 	int nsyms = xkb_state_key_get_syms(keyboard->wlr_keyboard->xkb_state,
-			keycode, &syms);
-	for (int i = 0; i < nsyms; i++) {
+									   keycode, &syms);
+	for (int i = 0; i < nsyms; i++)
+	{
 		xkb_keysym_t sym = syms[i];
-		if (sym == XKB_KEY_Escape) {
+		if (sym == XKB_KEY_Escape)
+		{
 			wl_display_terminate(sample->display);
 		}
 		// NOTE: It may be better to simply refer to our key state during each frame
 		// and make this change in pixels/sec^2
 		// Also, key repeat
 		int delta = 75;
-		if (event->state == WL_KEYBOARD_KEY_STATE_PRESSED) {
-			switch (sym) {
+		if (event->state == WL_KEYBOARD_KEY_STATE_PRESSED)
+		{
+			switch (sym)
+			{
 			case XKB_KEY_Left:
 				update_velocities(sample, -delta, 0);
 				break;
@@ -222,17 +255,20 @@ static void keyboard_key_notify(struct wl_listener *listener, void *data) {
 	}
 }
 
-static void keyboard_destroy_notify(struct wl_listener *listener, void *data) {
+static void keyboard_destroy_notify(struct wl_listener *listener, void *data)
+{
 	struct sample_keyboard *keyboard = wl_container_of(listener, keyboard, destroy);
 	wl_list_remove(&keyboard->destroy.link);
 	wl_list_remove(&keyboard->key.link);
 	free(keyboard);
 }
 
-static void new_input_notify(struct wl_listener *listener, void *data) {
+static void new_input_notify(struct wl_listener *listener, void *data)
+{
 	struct wlr_input_device *device = data;
-	struct sample_state *sample = wl_container_of(listener, sample, new_input);
-	switch (device->type) {
+	struct local_server *sample = wl_container_of(listener, sample, new_input);
+	switch (device->type)
+	{
 	case WLR_INPUT_DEVICE_KEYBOARD:;
 		struct sample_keyboard *keyboard = calloc(1, sizeof(*keyboard));
 		keyboard->wlr_keyboard = wlr_keyboard_from_input_device(device);
@@ -242,13 +278,15 @@ static void new_input_notify(struct wl_listener *listener, void *data) {
 		wl_signal_add(&keyboard->wlr_keyboard->events.key, &keyboard->key);
 		keyboard->key.notify = keyboard_key_notify;
 		struct xkb_context *context = xkb_context_new(XKB_CONTEXT_NO_FLAGS);
-		if (!context) {
+		if (!context)
+		{
 			wlr_log(WLR_ERROR, "Failed to create XKB context");
 			exit(1);
 		}
 		struct xkb_keymap *keymap = xkb_keymap_new_from_names(context, NULL,
-			XKB_KEYMAP_COMPILE_NO_FLAGS);
-		if (!keymap) {
+															  XKB_KEYMAP_COMPILE_NO_FLAGS);
+		if (!keymap)
+		{
 			wlr_log(WLR_ERROR, "Failed to create XKB keymap");
 			exit(1);
 		}
@@ -261,11 +299,11 @@ static void new_input_notify(struct wl_listener *listener, void *data) {
 	}
 }
 
-
-int main(int argc, char *argv[]) {
+int main(int argc, char *argv[])
+{
 	wlr_log_init(WLR_DEBUG, NULL);
 	struct wl_display *display = wl_display_create();
-	struct sample_state state = {
+	struct local_server state = {
 		.x_vel = 500,
 		.y_vel = 500,
 		.display = display,
@@ -275,7 +313,8 @@ int main(int argc, char *argv[]) {
 	clock_gettime(CLOCK_MONOTONIC, &state.ts_last);
 
 	struct wlr_backend *wlr = wlr_backend_autocreate(wl_display_get_event_loop(display), NULL);
-	if (!wlr) {
+	if (!wlr)
+	{
 		exit(1);
 	}
 
@@ -286,12 +325,13 @@ int main(int argc, char *argv[]) {
 
 	state.renderer = wlr_renderer_autocreate(wlr);
 	state.cat_texture = wlr_texture_from_pixels(state.renderer,
-		DRM_FORMAT_ABGR8888, cat_tex.width * 4, cat_tex.width, cat_tex.height,
-		cat_tex.pixel_data);
+												DRM_FORMAT_ABGR8888, cat_tex.width * 4, cat_tex.width, cat_tex.height,
+												cat_tex.pixel_data);
 
 	state.allocator = wlr_allocator_autocreate(wlr, state.renderer);
 
-	if (!wlr_backend_start(wlr)) {
+	if (!wlr_backend_start(wlr))
+	{
 		wlr_log(WLR_ERROR, "Failed to start backend");
 		wlr_backend_destroy(wlr);
 		exit(1);

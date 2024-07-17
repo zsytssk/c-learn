@@ -15,33 +15,20 @@
 #include <wlr/util/log.h>
 #include <xkbcommon/xkbcommon.h>
 #include <unistd.h>
-
-// #include <wlr/types/wlr_compositor.h>
-// #include <wlr/types/wlr_data_device.h>
-// #include <wlr/types/wlr_subcompositor.h>
-// #include <wlr/types/wlr_cursor.h>
-
-#include <wlr/types/wlr_output_layout.h>
-#include <wlr/types/wlr_scene.h>
+#include <wlr/types/wlr_compositor.h>
+#include <wlr/types/wlr_data_device.h>
+#include <wlr/types/wlr_subcompositor.h>
 
 struct local_server
 {
     struct wl_display *wl_display;
-    struct wlr_backend *backend;
+    struct wl_listener new_output;
     struct wl_listener new_input;
     struct wlr_renderer *renderer;
     struct wlr_allocator *allocator;
     struct timespec last_frame;
-
-    struct wlr_scene *scene;
-    struct wlr_scene_output_layout *scene_layout;
-
-    struct wlr_output_layout *output_layout;
-    struct wl_list outputs;
-    struct wl_listener new_output;
-
-    struct wlr_cursor *cursor;
-    struct wlr_xcursor_manager *cursor_mgr;
+    float color[4];
+    int dec;
 };
 
 struct sample_output
@@ -49,7 +36,6 @@ struct sample_output
     struct local_server *sample;
     struct wlr_output *output;
     struct wl_listener frame;
-    struct wl_listener request_state;
     struct wl_listener destroy;
 };
 
@@ -68,38 +54,41 @@ static void output_frame_notify(struct wl_listener *listener, void *data)
     struct local_server *sample = sample_output->sample;
     struct wlr_output *wlr_output = sample_output->output;
 
-    wlr_log(WLR_ERROR, "new_output_notify:> %d", wlr_output->width);
-    // struct timespec now;
-    // clock_gettime(CLOCK_MONOTONIC, &now);
-
-    // struct wlr_output_state state;
-    // wlr_output_state_init(&state);
-
-    // wlr_output_commit_state(wlr_output, &state);
-    // wlr_output_state_finish(&state);
-    // sample->last_frame = now;
-
-    struct wlr_scene *scene = sample_output->sample->scene;
-
-    struct wlr_scene_output *scene_output = wlr_scene_get_scene_output(
-        scene, sample_output->output);
-
-    /* Render the scene if needed and commit the output */
-    wlr_scene_output_commit(scene_output, NULL);
-
     struct timespec now;
     clock_gettime(CLOCK_MONOTONIC, &now);
-    wlr_scene_output_send_frame_done(scene_output, &now);
-}
 
-static void output_request_state(struct wl_listener *listener, void *data)
-{
-    /* This function is called when the backend requests a new state for
-     * the output. For example, Wayland and X11 backends request a new mode
-     * when the output window is resized. */
-    struct sample_output *output = wl_container_of(listener, output, request_state);
-    const struct wlr_output_event_request_state *event = data;
-    wlr_output_commit_state(output->output, event->state);
+    long ms = (now.tv_sec - sample->last_frame.tv_sec) * 1000 +
+              (now.tv_nsec - sample->last_frame.tv_nsec) / 1000000;
+    int inc = (sample->dec + 1) % 3;
+
+    // sample->color[inc] += ms / 2000.0f;
+    // sample->color[sample->dec] -= ms / 2000.0f;
+
+    // if (sample->color[sample->dec] < 0.0f)
+    // {
+    //     sample->color[inc] = 1.0f;
+    //     sample->color[sample->dec] = 0.0f;
+    //     sample->dec = inc;
+    // }
+
+    struct wlr_output_state state;
+    wlr_output_state_init(&state);
+
+    struct wlr_render_pass *pass = wlr_output_begin_render_pass(wlr_output, &state, NULL, NULL);
+    wlr_render_pass_add_rect(pass, &(struct wlr_render_rect_options){
+                                       .box = {.width = wlr_output->width, .height = wlr_output->height},
+                                       .color = {
+                                           .r = sample->color[0],
+                                           .g = sample->color[1],
+                                           .b = sample->color[2],
+                                           .a = sample->color[3],
+                                       },
+                                   });
+    wlr_render_pass_submit(pass);
+
+    wlr_output_commit_state(wlr_output, &state);
+    wlr_output_state_finish(&state);
+    sample->last_frame = now;
 }
 
 static void output_remove_notify(struct wl_listener *listener, void *data)
@@ -118,6 +107,7 @@ static void new_output_notify(struct wl_listener *listener, void *data)
     struct local_server *sample =
         wl_container_of(listener, sample, new_output);
 
+    wlr_log(WLR_ERROR, "new_output_notify:> %d", output->width);
     wlr_output_init_render(output, sample->allocator, sample->renderer);
 
     struct sample_output *sample_output = calloc(1, sizeof(*sample_output));
@@ -125,10 +115,6 @@ static void new_output_notify(struct wl_listener *listener, void *data)
     sample_output->sample = sample;
     wl_signal_add(&output->events.frame, &sample_output->frame);
     sample_output->frame.notify = output_frame_notify;
-
-    sample_output->request_state.notify = output_request_state;
-    wl_signal_add(&output->events.request_state, &sample_output->request_state);
-
     wl_signal_add(&output->events.destroy, &sample_output->destroy);
     sample_output->destroy.notify = output_remove_notify;
 
@@ -142,11 +128,6 @@ static void new_output_notify(struct wl_listener *listener, void *data)
     }
     wlr_output_commit_state(output, &state);
     wlr_output_state_finish(&state);
-
-    struct wlr_output_layout_output *l_output = wlr_output_layout_add_auto(sample->output_layout,
-                                                                           output);
-    struct wlr_scene_output *scene_output = wlr_scene_output_create(sample->scene, output);
-    wlr_scene_output_layout_add_output(sample->scene_layout, l_output, scene_output);
 }
 
 static void keyboard_key_notify(struct wl_listener *listener, void *data)
@@ -229,47 +210,34 @@ int main(void)
     wlr_log_init(WLR_DEBUG, NULL);
     struct wl_display *wl_display = wl_display_create();
     struct local_server server = {
+        .color = {0.0, 0.0, 0.0, 8.0},
+        .dec = 0,
         .last_frame = {0},
         .wl_display = wl_display};
 
-    server.backend = wlr_backend_autocreate(wl_display_get_event_loop(wl_display), NULL);
-    if (!server.backend)
+    struct wlr_backend *backend = wlr_backend_autocreate(wl_display_get_event_loop(wl_display), NULL);
+    if (!backend)
     {
         wlr_log(WLR_ERROR, "failed to create wlr_backend");
         exit(1);
     }
 
-    server.renderer = wlr_renderer_autocreate(server.backend);
-    wlr_renderer_init_wl_display(server.renderer, server.wl_display);
+    server.renderer = wlr_renderer_autocreate(backend);
+    server.allocator = wlr_allocator_autocreate(backend, server.renderer);
 
-    server.allocator = wlr_allocator_autocreate(server.backend, server.renderer);
-    // wlr_compositor_create(server.wl_display, 5, server.renderer);
-    // wlr_subcompositor_create(server.wl_display);
-    // wlr_data_device_manager_create(server.wl_display);
-
-    server.output_layout = wlr_output_layout_create(server.wl_display);
-    wl_list_init(&server.outputs);
-    server.scene = wlr_scene_create();
-    server.scene_layout = wlr_scene_attach_output_layout(server.scene, server.output_layout);
-
-    wl_signal_add(&server.backend->events.new_output, &server.new_output);
+    wl_signal_add(&backend->events.new_output, &server.new_output);
     server.new_output.notify = new_output_notify;
-    wl_signal_add(&server.backend->events.new_input, &server.new_input);
+    wl_signal_add(&backend->events.new_input, &server.new_input);
     server.new_input.notify = new_input_notify;
 
     clock_gettime(CLOCK_MONOTONIC, &server.last_frame);
 
-    if (!wlr_backend_start(server.backend))
+    if (!wlr_backend_start(backend))
     {
         wlr_log(WLR_ERROR, "Failed to start backend");
-        wlr_backend_destroy(server.backend);
+        wlr_backend_destroy(backend);
         exit(1);
     }
     wl_display_run(server.wl_display);
-
-    wlr_scene_node_destroy(&server.scene->tree.node);
-    wlr_allocator_destroy(server.allocator);
-    wlr_renderer_destroy(server.renderer);
-    wlr_backend_destroy(server.backend);
     wl_display_destroy(server.wl_display);
 }

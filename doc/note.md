@@ -12,10 +12,6 @@ https://wayland.freedesktop.org/docs/html/ch04.html
 
 ## 2024-07-01 15:13:10
 
-- @ques 为什么 sample 显示有问题
-
-  - 因为没有合适的渲染
-
 - @ques tinywl 中的大小自定义是如何做到的
 
   - 也许是一大堆代码综合作用的
@@ -64,6 +60,10 @@ wlr_output_set_mode(output, &mode);
   - https://www.learn-c.org/en/Arrays_and_Pointers
 
 ### end
+
+- @ques 为什么 sample 显示有问题
+
+  - 因为没有合适的渲染
 
 - @ques c printf NULL
 - @ques zig 中 linklist 如何实现, 他又么有泛型?

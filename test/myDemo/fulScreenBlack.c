@@ -37,6 +37,7 @@ struct sample_output
     struct wlr_output *output;
     struct wl_listener frame;
     struct wl_listener destroy;
+    struct wl_listener request_state;
 };
 
 struct sample_keyboard
@@ -57,9 +58,9 @@ static void output_frame_notify(struct wl_listener *listener, void *data)
     struct timespec now;
     clock_gettime(CLOCK_MONOTONIC, &now);
 
-    long ms = (now.tv_sec - sample->last_frame.tv_sec) * 1000 +
-              (now.tv_nsec - sample->last_frame.tv_nsec) / 1000000;
-    int inc = (sample->dec + 1) % 3;
+    // long ms = (now.tv_sec - sample->last_frame.tv_sec) * 1000 +
+    //           (now.tv_nsec - sample->last_frame.tv_nsec) / 1000000;
+    // int inc = (sample->dec + 1) % 3;
 
     // sample->color[inc] += ms / 2000.0f;
     // sample->color[sample->dec] -= ms / 2000.0f;
@@ -100,6 +101,14 @@ static void output_remove_notify(struct wl_listener *listener, void *data)
     wl_list_remove(&sample_output->destroy.link);
     free(sample_output);
 }
+static void request_state_notify(struct wl_listener *listener, void *data)
+{
+    struct sample_output *sample_output =
+        wl_container_of(listener, sample_output, request_state);
+    wlr_log(WLR_ERROR, "request_state_notify:> %d", sample_output->output->width);
+    const struct wlr_output_event_request_state *event = data;
+    wlr_output_commit_state(sample_output->output, event->state);
+}
 
 static void new_output_notify(struct wl_listener *listener, void *data)
 {
@@ -117,6 +126,8 @@ static void new_output_notify(struct wl_listener *listener, void *data)
     sample_output->frame.notify = output_frame_notify;
     wl_signal_add(&output->events.destroy, &sample_output->destroy);
     sample_output->destroy.notify = output_remove_notify;
+    wl_signal_add(&output->events.request_state, &sample_output->request_state);
+    sample_output->request_state.notify = request_state_notify;
 
     struct wlr_output_state state;
     wlr_output_state_init(&state);
@@ -210,7 +221,7 @@ int main(void)
     wlr_log_init(WLR_DEBUG, NULL);
     struct wl_display *wl_display = wl_display_create();
     struct local_server server = {
-        .color = {1.0, 0.0, 0.0, 1.0},
+        .color = {0.1, 0.1, 0.1, 0.8},
         .dec = 0,
         .last_frame = {0},
         .wl_display = wl_display};

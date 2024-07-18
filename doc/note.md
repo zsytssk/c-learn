@@ -16,6 +16,18 @@ https://wayland.freedesktop.org/docs/html/ch04.html
 
   - 可能需要阅读源码, 把每一个方法做什么的搞清楚
 
+- @ques
+
+  - wlr_scene_create -> scene 是干嘛的
+  - 等等
+
+- @ques 能不能直接使用 wlroots 源代码编译
+
+  - 这样我就可以加 log 了
+  - 自己去编译?
+
+- @ques 默认的鼠标图片是如何设置的?
+
 - @ques `wlroots` 调用都是 server 的接口, 他的全部功能是如何实现的?
 
   - 这应该太复杂了
@@ -27,7 +39,19 @@ https://wayland.freedesktop.org/docs/html/ch04.html
 - @ques `wl_display` 的具体内容不需要定义?
 
 - @ques 我是不是需要先去学习下 wayland 的教程
+
   - 用对象组成结构, 联系成体系 -> 这比关注方法应该更有效
+
+- @ques `xkb_keymap_unref(keymap);xkb_context_unref(context);`
+
+  - 在使用之后这两个变量就可以回收了吗? 难道不需要将状态保存吗?
+
+- @ques c 如何处理内存问题 有 zig 中的 allocator 吗?
+
+- dynamic memory allocator + array 这个是不是就可以搞一个动态的数组了
+  - https://www.learn-c.org/en/Arrays_and_Pointers
+
+### end
 
 ```
 struct wlr_output_mode mode;
@@ -38,20 +62,9 @@ mode.refresh = 60 * 1000;   // 刷新率 (单位是 Hz，这里设置为 60 Hz)
 wlr_output_set_mode(output, &mode);
 ```
 
-- @ques `xkb_keymap_unref(keymap);xkb_context_unref(context);`
-
-  - 在使用之后这两个变量就可以回收了吗? 难道不需要将状态保存吗?
-
-- @ques c 如何处理内存问题 有 zig 中的 allocator 吗?
-
 - `cairo_surface_destroy(buffer->surface);`
 
   - buffer 是一个指向结构体的指针，则使用箭头运算符：buffer->surface。
-
-- dynamic memory allocator + array 这个是不是就可以搞一个动态的数组了
-  - https://www.learn-c.org/en/Arrays_and_Pointers
-
-### end
 
 - @ques 显示鼠标
 

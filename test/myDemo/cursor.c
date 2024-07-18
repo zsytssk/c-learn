@@ -233,7 +233,6 @@ static void server_cursor_motion_absolute(struct wl_listener *listener, void *da
     struct local_server *server =
         wl_container_of(listener, server, cursor_motion_absolute);
     struct wlr_pointer_motion_absolute_event *event = data;
-    wlr_log(WLR_ERROR, "server_cursor_motion_absolute: x=%lf,y=%lf", event->x, event->y);
     wlr_cursor_warp_absolute(server->cursor, &event->pointer->base, event->x, event->y);
     wlr_cursor_set_xcursor(server->cursor, server->cursor_mgr, "default");
 }

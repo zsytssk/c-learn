@@ -213,28 +213,11 @@ static void new_input_notify(struct wl_listener *listener, void *data)
     wlr_seat_set_capabilities(sample->seat, caps);
 }
 
-static void server_cursor_motion(struct wl_listener *listener, void *data)
-{
-    struct local_server *server =
-        wl_container_of(listener, server, cursor_motion);
-    struct wlr_pointer_motion_event *event = data;
-    /* The cursor doesn't move unless we tell it to. The cursor automatically
-     * handles constraining the motion to the output layout, as well as any
-     * special configuration applied for the specific input device which
-     * generated the event. You can pass NULL for the device if you want to move
-     * the cursor around without any input. */
-    wlr_log(WLR_ERROR, "server_cursor_motion event_delta: x=%d, y=%d", event->delta_x, event->delta_y);
-    wlr_cursor_move(server->cursor, &event->pointer->base,
-                    event->delta_x, event->delta_y);
-    // process_cursor_motion(server, event->time_msec);
-    wlr_cursor_set_xcursor(server->cursor, server->cursor_mgr, "default");
-}
 static void server_cursor_motion_absolute(struct wl_listener *listener, void *data)
 {
     struct local_server *server =
         wl_container_of(listener, server, cursor_motion_absolute);
     struct wlr_pointer_motion_absolute_event *event = data;
-    wlr_log(WLR_ERROR, "server_cursor_motion_absolute: x=%lf,y=%lf", event->x, event->y);
     wlr_cursor_warp_absolute(server->cursor, &event->pointer->base, event->x, event->y);
     wlr_cursor_set_xcursor(server->cursor, server->cursor_mgr, "default");
 }
@@ -286,8 +269,6 @@ int main(void)
     wlr_cursor_attach_output_layout(server.cursor, server.output_layout);
 
     server.cursor_mgr = wlr_xcursor_manager_create(NULL, 24);
-    server.cursor_motion.notify = server_cursor_motion;
-    wl_signal_add(&server.cursor->events.motion, &server.cursor_motion);
     server.cursor_motion_absolute.notify = server_cursor_motion_absolute;
     wl_signal_add(&server.cursor->events.motion_absolute,
                   &server.cursor_motion_absolute);

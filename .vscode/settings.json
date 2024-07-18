@@ -1,5 +1,6 @@
 {
   "code-runner.executorMap": {
+    // "c": "gcc -Wextra -DWLR_USE_UNSTABLE $fullFileName -o $workspaceRoot/bin/$fileNameWithoutExt  -I/home/zsy/Documents/zsytssk/github/wlroots -I/usr/include/cairo -I/usr/include/libdrm -I/usr/include/pixman-1 -lcairo -lwayland-client -lwayland-server -lxkbcommon && $workspaceRoot/bin/$fileNameWithoutExt"
     "c": "gcc -Wextra -DWLR_USE_UNSTABLE $fullFileName -o $workspaceRoot/bin/$fileNameWithoutExt  -I$workspaceRoot/test -I/usr/include/cairo -I/usr/include/libdrm -I/usr/include/pixman-1 -I/usr/include/wlroots-0.18 -lcairo -lwlroots-0.18 -lwayland-client -lwayland-server -lxkbcommon && $workspaceRoot/bin/$fileNameWithoutExt"
     // "c": "gcc -Wextra -DWLR_USE_UNSTABLE $fullFileName -o $workspaceRoot/bin/$fileNameWithoutExt  -I$workspaceRoot/test -I/usr/include/cairo -I/usr/include/libdrm -I/usr/include/pixman-1 -I/usr/include/wlroots-0.18 -lcairo -lwlroots-0.18 -lwayland-client -lwayland-server -lxkbcommon && $workspaceRoot/bin/$fileNameWithoutExt",
     // "c": "echo $fileNameWithoutExt"

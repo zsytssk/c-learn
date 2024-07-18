@@ -1,5 +1,15 @@
 https://wayland.freedesktop.org/docs/html/apa.html
 
+## wlroots
+
+- output_layout
+
+  - 输出布局管理器在 wlroots 库中是一个用于管理和组织多个输出设备（如显示器）相对布局的工具
+  - 关联 `scene_layout` `cursor`
+
+- scene
+  - 场景, 就像游戏中的"场景"概念, 每一个元素都需要在上面显示...
+
 ## save
 
 wl_display - 负责管理 Wayland 客户端与服务器之间的连接。它提供了创建、管理和销毁连接的功能。

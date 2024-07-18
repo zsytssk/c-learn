@@ -226,7 +226,6 @@ static void server_cursor_motion(struct wl_listener *listener, void *data)
     wlr_log(WLR_ERROR, "server_cursor_motion event_delta: x=%d, y=%d", event->delta_x, event->delta_y);
     wlr_cursor_move(server->cursor, &event->pointer->base,
                     event->delta_x, event->delta_y);
-    // process_cursor_motion(server, event->time_msec);
     wlr_cursor_set_xcursor(server->cursor, server->cursor_mgr, "default");
 }
 static void server_cursor_motion_absolute(struct wl_listener *listener, void *data)
@@ -239,34 +238,11 @@ static void server_cursor_motion_absolute(struct wl_listener *listener, void *da
     wlr_cursor_set_xcursor(server->cursor, server->cursor_mgr, "default");
 }
 
-static void seat_request_cursor(struct wl_listener *listener, void *data)
-{
-    wlr_log(WLR_ERROR, "seat_request_cursor");
-    struct local_server *server = wl_container_of(
-        listener, server, request_cursor);
-    /* This event is raised by the seat when a client provides a cursor image */
-    struct wlr_seat_pointer_request_set_cursor_event *event = data;
-    struct wlr_seat_client *focused_client =
-        server->seat->pointer_state.focused_client;
-    /* This can be sent by any client, so we check to make sure this one is
-     * actually has pointer focus first. */
-    if (focused_client == event->seat_client)
-    {
-        /* Once we've vetted the client, we can tell the cursor to use the
-         * provided surface as the cursor image. It will set the hardware cursor
-         * on the output that it's currently on and continue to do so as the
-         * cursor moves between outputs. */
-        wlr_cursor_set_surface(server->cursor, event->surface,
-                               event->hotspot_x, event->hotspot_y);
-    }
-}
-
 int main(void)
 {
     wlr_log_init(WLR_DEBUG, NULL);
     struct wl_display *wl_display = wl_display_create();
-    struct local_server server = {
-        .wl_display = wl_display};
+    struct local_server server = {.wl_display = wl_display};
 
     struct wlr_backend *backend = wlr_backend_autocreate(wl_display_get_event_loop(wl_display), NULL);
     if (!backend)
@@ -293,9 +269,6 @@ int main(void)
                   &server.cursor_motion_absolute);
 
     server.seat = wlr_seat_create(server.wl_display, "seat0");
-    server.request_cursor.notify = seat_request_cursor;
-    wl_signal_add(&server.seat->events.request_set_cursor,
-                  &server.request_cursor);
 
     wl_signal_add(&backend->events.new_output, &server.new_output);
     server.new_output.notify = new_output_notify;

@@ -12,17 +12,9 @@ https://wayland.freedesktop.org/docs/html/ch04.html
 
 ## 2024-07-01 15:13:10
 
-- @ques tinywl 中的大小自定义是如何做到的
+- @todo
 
-  - 也许是一大堆代码综合作用的
-  - `server.output_layout`
-
-- @ques `events.motion` vs `events.motion_absolute`
-
-- @ques `server.renderer` 这个 renderer 是干嘛的
-
-  - 创建 `allocator` `compositor`
-  - `wlr_renderer_init_wl_display` -> `wlr_renderer_init_wl_shm` ...
+  - 可能需要阅读源码, 把每一个方法做什么的搞清楚
 
 - @ques `wlroots` 调用都是 server 的接口, 他的全部功能是如何实现的?
 
@@ -60,6 +52,27 @@ wlr_output_set_mode(output, &mode);
   - https://www.learn-c.org/en/Arrays_and_Pointers
 
 ### end
+
+- @ques 显示鼠标
+
+  - 鼠标的样式没有设置 ?
+  - 难道是必须要有 scene 设置吗?
+  - ***
+  - `wlr_output_layout_create` ?
+  - 可能需要 `wlr_seat` `wlr_input_device` `wlr_pointer`
+  - 鼠标的状态
+
+- @ques `events.motion` vs `events.motion_absolute`
+
+- @ques `server.renderer` 这个 renderer 是干嘛的
+
+  - 创建 `allocator` `compositor`
+  - `wlr_renderer_init_wl_display` -> `wlr_renderer_init_wl_shm` ...
+
+- @ques tinywl 中的大小自定义是如何做到的
+
+  - 也许是一大堆代码综合作用的
+  - `server.output_layout`
 
 - @ques 为什么 sample 显示有问题
 

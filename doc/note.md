@@ -12,21 +12,12 @@ https://wayland.freedesktop.org/docs/html/ch04.html
 
 ## 2024-07-01 15:13:10
 
-- @todo
-
-  - 可能需要阅读源码, 把每一个方法做什么的搞清楚
-
-- @ques
-
-  - wlr_scene_create -> scene 是干嘛的
-  - 等等
+- @ques `river` 中 zig 如何监听事件的
 
 - @ques 能不能直接使用 wlroots 源代码编译
 
   - 这样我就可以加 log 了
   - 自己去编译?
-
-- @ques 默认的鼠标图片是如何设置的?
 
 - @ques `wlroots` 调用都是 server 的接口, 他的全部功能是如何实现的?
 
@@ -52,6 +43,13 @@ https://wayland.freedesktop.org/docs/html/ch04.html
   - https://www.learn-c.org/en/Arrays_and_Pointers
 
 ### end
+
+- @ques 默认的鼠标图片是如何设置的?
+
+- @ques
+
+  - wlr_scene_create -> scene 是干嘛的
+  - 等等
 
 ```
 struct wlr_output_mode mode;

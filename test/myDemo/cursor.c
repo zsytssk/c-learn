@@ -23,6 +23,10 @@
 #include <wlr/types/wlr_seat.h>
 #include <wlr/types/wlr_scene.h>
 
+// @TODO-tab 切换鼠标状态
+
+// @TODO-tab
+static char *status[] = {"default", "pointer", "text", "move", "wait", "crosshair"};
 struct local_server
 {
     struct wl_display *wl_display;
@@ -42,6 +46,9 @@ struct local_server
 
     struct wlr_scene *scene;
     struct wlr_scene_output_layout *scene_layout;
+
+    // @TODO-tab
+    char *cursor_status;
 };
 
 struct sample_output
@@ -139,7 +146,11 @@ static void keyboard_key_notify(struct wl_listener *listener, void *data)
     const xkb_keysym_t *syms;
     int nsyms = xkb_state_key_get_syms(keyboard->wlr_keyboard->xkb_state,
                                        keycode, &syms);
-    wlr_log(WLR_ERROR, "keyboard_key_notify:> code=%d, nsyms=%d", event->keycode, nsyms);
+    wlr_log(WLR_ERROR, "keyboard_key_notify:> code=%d, state=%d", event->keycode, event->state);
+    if (event->state == WL_KEYBOARD_KEY_STATE_RELEASED)
+    {
+        return;
+    }
     for (int i = 0; i < nsyms; i++)
     {
         xkb_keysym_t sym = syms[i];
@@ -153,6 +164,26 @@ static void keyboard_key_notify(struct wl_listener *listener, void *data)
             {
                 execl("/bin/sh", "/bin/sh", "-c", "alacritty", (void *)NULL);
             }
+        }
+        // tab 切换按钮状态
+        if (sym == XKB_KEY_Tab)
+        {
+            size_t index = 0;
+            size_t len = sizeof(status) / sizeof(status[0]);
+            // @TODO-tab
+            char *cur = sample->cursor_status;
+            while (cur != NULL)
+            {
+                if (status[index] == cur || index == len)
+                {
+                    break;
+                }
+                index++;
+            }
+
+            int next_index = (index + 1) % len;
+            wlr_cursor_set_xcursor(sample->cursor, sample->cursor_mgr, status[next_index]);
+            sample->cursor_status = status[next_index];
         }
     }
 }
@@ -213,21 +244,6 @@ static void new_input_notify(struct wl_listener *listener, void *data)
     wlr_seat_set_capabilities(sample->seat, caps);
 }
 
-static void server_cursor_motion(struct wl_listener *listener, void *data)
-{
-    struct local_server *server =
-        wl_container_of(listener, server, cursor_motion);
-    struct wlr_pointer_motion_event *event = data;
-    /* The cursor doesn't move unless we tell it to. The cursor automatically
-     * handles constraining the motion to the output layout, as well as any
-     * special configuration applied for the specific input device which
-     * generated the event. You can pass NULL for the device if you want to move
-     * the cursor around without any input. */
-    wlr_log(WLR_ERROR, "server_cursor_motion event_delta: x=%d, y=%d", event->delta_x, event->delta_y);
-    wlr_cursor_move(server->cursor, &event->pointer->base,
-                    event->delta_x, event->delta_y);
-    wlr_cursor_set_xcursor(server->cursor, server->cursor_mgr, "default");
-}
 static void server_cursor_motion_absolute(struct wl_listener *listener, void *data)
 {
     struct local_server *server =
@@ -261,8 +277,6 @@ int main(void)
     wlr_cursor_attach_output_layout(server.cursor, server.output_layout);
 
     server.cursor_mgr = wlr_xcursor_manager_create(NULL, 24);
-    server.cursor_motion.notify = server_cursor_motion;
-    wl_signal_add(&server.cursor->events.motion, &server.cursor_motion);
     server.cursor_motion_absolute.notify = server_cursor_motion_absolute;
     wl_signal_add(&server.cursor->events.motion_absolute,
                   &server.cursor_motion_absolute);

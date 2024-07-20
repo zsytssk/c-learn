@@ -577,8 +577,7 @@ static void server_cursor_motion_absolute(
 	struct tinywl_server *server =
 		wl_container_of(listener, server, cursor_motion_absolute);
 	struct wlr_pointer_motion_absolute_event *event = data;
-	wlr_log(WLR_ERROR, "server_cursor_motion_absolute: x=%lf,y=%lf", event->x, event->y);
-	wlr_log(WLR_ERROR, "server_cursor_motion_absolute: x=%lf,y=%lf", server->cursor->x, server->cursor->y);
+	// wlr_log(WLR_ERROR, "server_cursor_motion_absolute: x=%lf,y=%lf", event->x, event->y);
 
 	wlr_cursor_warp_absolute(server->cursor, &event->pointer->base, event->x,
 							 event->y);
@@ -1138,9 +1137,9 @@ int main(int argc, char *argv[])
 	server.request_cursor.notify = seat_request_cursor;
 	wl_signal_add(&server.seat->events.request_set_cursor,
 				  &server.request_cursor);
-	// server.request_set_selection.notify = seat_request_set_selection;
-	// wl_signal_add(&server.seat->events.request_set_selection,
-	// 			  &server.request_set_selection);
+	server.request_set_selection.notify = seat_request_set_selection;
+	wl_signal_add(&server.seat->events.request_set_selection,
+				  &server.request_set_selection);
 
 	/* Add a Unix socket to the Wayland display. */
 	const char *socket = wl_display_add_socket_auto(server.wl_display);

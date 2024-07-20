@@ -23,9 +23,14 @@
 #include <wlr/types/wlr_seat.h>
 #include <wlr/types/wlr_scene.h>
 
+// @TODO-tab 切换鼠标状态
+
+// @TODO-tab
+static char *status[] = {"default", "pointer", "text", "move", "wait", "crosshair"};
 struct local_server
 {
     struct wl_display *wl_display;
+    struct wlr_backend *backend;
     struct wl_listener new_output;
     struct wl_listener new_input;
     struct wlr_renderer *renderer;
@@ -42,6 +47,9 @@ struct local_server
 
     struct wlr_scene *scene;
     struct wlr_scene_output_layout *scene_layout;
+
+    // @TODO-tab
+    char *cursor_status;
 };
 
 struct sample_output
@@ -139,7 +147,11 @@ static void keyboard_key_notify(struct wl_listener *listener, void *data)
     const xkb_keysym_t *syms;
     int nsyms = xkb_state_key_get_syms(keyboard->wlr_keyboard->xkb_state,
                                        keycode, &syms);
-    wlr_log(WLR_ERROR, "keyboard_key_notify:> code=%d, nsyms=%d", event->keycode, nsyms);
+    wlr_log(WLR_ERROR, "keyboard_key_notify:> code=%d, state=%d", event->keycode, event->state);
+    if (event->state == WL_KEYBOARD_KEY_STATE_RELEASED)
+    {
+        return;
+    }
     for (int i = 0; i < nsyms; i++)
     {
         xkb_keysym_t sym = syms[i];
@@ -153,6 +165,26 @@ static void keyboard_key_notify(struct wl_listener *listener, void *data)
             {
                 execl("/bin/sh", "/bin/sh", "-c", "alacritty", (void *)NULL);
             }
+        }
+        // tab 切换按钮状态
+        if (sym == XKB_KEY_Tab)
+        {
+            size_t index = 0;
+            size_t len = sizeof(status) / sizeof(status[0]);
+            // @TODO-tab
+            char *cur = sample->cursor_status;
+            while (cur != NULL)
+            {
+                if (status[index] == cur || index == len)
+                {
+                    break;
+                }
+                index++;
+            }
+
+            int next_index = (index + 1) % len;
+            wlr_cursor_set_xcursor(sample->cursor, sample->cursor_mgr, status[next_index]);
+            sample->cursor_status = status[next_index];
         }
     }
 }
@@ -222,44 +254,21 @@ static void server_cursor_motion_absolute(struct wl_listener *listener, void *da
     wlr_cursor_set_xcursor(server->cursor, server->cursor_mgr, "default");
 }
 
-static void seat_request_cursor(struct wl_listener *listener, void *data)
-{
-    wlr_log(WLR_ERROR, "seat_request_cursor");
-    struct local_server *server = wl_container_of(
-        listener, server, request_cursor);
-    /* This event is raised by the seat when a client provides a cursor image */
-    struct wlr_seat_pointer_request_set_cursor_event *event = data;
-    struct wlr_seat_client *focused_client =
-        server->seat->pointer_state.focused_client;
-    /* This can be sent by any client, so we check to make sure this one is
-     * actually has pointer focus first. */
-    if (focused_client == event->seat_client)
-    {
-        /* Once we've vetted the client, we can tell the cursor to use the
-         * provided surface as the cursor image. It will set the hardware cursor
-         * on the output that it's currently on and continue to do so as the
-         * cursor moves between outputs. */
-        wlr_cursor_set_surface(server->cursor, event->surface,
-                               event->hotspot_x, event->hotspot_y);
-    }
-}
-
 int main(void)
 {
     wlr_log_init(WLR_DEBUG, NULL);
     struct wl_display *wl_display = wl_display_create();
-    struct local_server server = {
-        .wl_display = wl_display};
+    struct local_server server = {.wl_display = wl_display};
 
-    struct wlr_backend *backend = wlr_backend_autocreate(wl_display_get_event_loop(wl_display), NULL);
-    if (!backend)
+    server.backend = wlr_backend_autocreate(wl_display_get_event_loop(wl_display), NULL);
+    if (!server.backend)
     {
         wlr_log(WLR_ERROR, "failed to create wlr_backend");
         exit(1);
     }
 
-    server.renderer = wlr_renderer_autocreate(backend);
-    server.allocator = wlr_allocator_autocreate(backend, server.renderer);
+    server.renderer = wlr_renderer_autocreate(server.backend);
+    server.allocator = wlr_allocator_autocreate(server.backend, server.renderer);
     server.output_layout = wlr_output_layout_create(server.wl_display);
 
     server.scene = wlr_scene_create();
@@ -274,21 +283,24 @@ int main(void)
                   &server.cursor_motion_absolute);
 
     server.seat = wlr_seat_create(server.wl_display, "seat0");
-    server.request_cursor.notify = seat_request_cursor;
-    wl_signal_add(&server.seat->events.request_set_cursor,
-                  &server.request_cursor);
 
-    wl_signal_add(&backend->events.new_output, &server.new_output);
+    wl_signal_add(&server.backend->events.new_output, &server.new_output);
     server.new_output.notify = new_output_notify;
-    wl_signal_add(&backend->events.new_input, &server.new_input);
+    wl_signal_add(&server.backend->events.new_input, &server.new_input);
     server.new_input.notify = new_input_notify;
 
-    if (!wlr_backend_start(backend))
+    if (!wlr_backend_start(server.backend))
     {
         wlr_log(WLR_ERROR, "Failed to start backend");
-        wlr_backend_destroy(backend);
+        wlr_backend_destroy(server.backend);
         exit(1);
     }
     wl_display_run(server.wl_display);
+
+    wlr_scene_node_destroy(&server.scene->tree.node);
+    wlr_xcursor_manager_destroy(server.cursor_mgr);
+    wlr_renderer_destroy(server.renderer);
+    wlr_backend_destroy(server.backend);
+    wlr_cursor_destroy(server.cursor);
     wl_display_destroy(server.wl_display);
 }

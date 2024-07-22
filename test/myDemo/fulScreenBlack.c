@@ -26,9 +26,8 @@ struct local_server
     struct wl_listener new_input;
     struct wlr_renderer *renderer;
     struct wlr_allocator *allocator;
-    struct timespec last_frame;
-    float color[4];
-    int dec;
+
+    struct wlr_scene_rect *background;
 };
 
 struct sample_output
@@ -50,46 +49,6 @@ struct sample_keyboard
 
 static void output_frame_notify(struct wl_listener *listener, void *data)
 {
-    struct sample_output *sample_output =
-        wl_container_of(listener, sample_output, frame);
-    struct local_server *sample = sample_output->sample;
-    struct wlr_output *wlr_output = sample_output->output;
-
-    struct timespec now;
-    clock_gettime(CLOCK_MONOTONIC, &now);
-
-    // long ms = (now.tv_sec - sample->last_frame.tv_sec) * 1000 +
-    //           (now.tv_nsec - sample->last_frame.tv_nsec) / 1000000;
-    // int inc = (sample->dec + 1) % 3;
-
-    // sample->color[inc] += ms / 2000.0f;
-    // sample->color[sample->dec] -= ms / 2000.0f;
-
-    // if (sample->color[sample->dec] < 0.0f)
-    // {
-    //     sample->color[inc] = 1.0f;
-    //     sample->color[sample->dec] = 0.0f;
-    //     sample->dec = inc;
-    // }
-
-    struct wlr_output_state state;
-    wlr_output_state_init(&state);
-
-    struct wlr_render_pass *pass = wlr_output_begin_render_pass(wlr_output, &state, NULL, NULL);
-    wlr_render_pass_add_rect(pass, &(struct wlr_render_rect_options){
-                                       .box = {.width = wlr_output->width, .height = wlr_output->height},
-                                       .color = {
-                                           .r = sample->color[0],
-                                           .g = sample->color[1],
-                                           .b = sample->color[2],
-                                           .a = sample->color[3],
-                                       },
-                                   });
-    wlr_render_pass_submit(pass);
-
-    wlr_output_commit_state(wlr_output, &state);
-    wlr_output_state_finish(&state);
-    sample->last_frame = now;
 }
 
 static void output_remove_notify(struct wl_listener *listener, void *data)
@@ -220,11 +179,7 @@ int main(void)
 {
     wlr_log_init(WLR_DEBUG, NULL);
     struct wl_display *wl_display = wl_display_create();
-    struct local_server server = {
-        .color = {0.1, 0.1, 0.1, 0.8},
-        .dec = 0,
-        .last_frame = {0},
-        .wl_display = wl_display};
+    struct local_server server = {.wl_display = wl_display};
 
     struct wlr_backend *backend = wlr_backend_autocreate(wl_display_get_event_loop(wl_display), NULL);
     if (!backend)
@@ -240,8 +195,6 @@ int main(void)
     server.new_output.notify = new_output_notify;
     wl_signal_add(&backend->events.new_input, &server.new_input);
     server.new_input.notify = new_input_notify;
-
-    clock_gettime(CLOCK_MONOTONIC, &server.last_frame);
 
     if (!wlr_backend_start(backend))
     {

@@ -42,6 +42,8 @@ struct tinywl_server
 	struct wlr_scene *scene;
 	struct wlr_scene_output_layout *scene_layout;
 
+	struct wlr_scene_rect *background;
+
 	struct wlr_xdg_shell *xdg_shell;
 	struct wl_listener new_xdg_toplevel;
 	struct wl_listener new_xdg_popup;
@@ -374,6 +376,7 @@ static void seat_request_cursor(struct wl_listener *listener, void *data)
 
 static void seat_request_set_selection(struct wl_listener *listener, void *data)
 {
+	wlr_log(WLR_ERROR, "test:>seat_request_set_selection");
 	/* This event is raised by the seat when a client wants to set the selection,
 	 * usually when the user copies something. wlroots allows compositors to
 	 * ignore such requests if they so choose, but in tinywl we always honor
@@ -635,8 +638,29 @@ static void server_cursor_frame(struct wl_listener *listener, void *data)
 	wlr_seat_pointer_notify_frame(server->seat);
 }
 
+// static void output_frame(struct wl_listener *listener, void *data)
+// {
+// 	/* This function is called every time an output is ready to display a frame,
+// 	 * generally at the output's refresh rate (e.g. 60Hz). */
+// 	struct tinywl_output *output = wl_container_of(listener, output, frame);
+// 	struct wlr_scene *scene = output->server->scene;
+
+// 	struct wlr_scene_output *scene_output = wlr_scene_get_scene_output(
+// 		scene, output->wlr_output);
+
+// 	/* Render the scene if needed and commit the output */
+// 	wlr_scene_output_commit(scene_output, NULL);
+
+// 	struct timespec now;
+// 	clock_gettime(CLOCK_MONOTONIC, &now);
+// 	wlr_scene_output_send_frame_done(scene_output, &now);
+// }
+
 static void output_frame(struct wl_listener *listener, void *data)
 {
+
+	float color[4] = {0.1, 0.0, 0.0, 0.8};
+
 	/* This function is called every time an output is ready to display a frame,
 	 * generally at the output's refresh rate (e.g. 60Hz). */
 	struct tinywl_output *output = wl_container_of(listener, output, frame);
@@ -661,6 +685,9 @@ static void output_request_state(struct wl_listener *listener, void *data)
 	struct tinywl_output *output = wl_container_of(listener, output, request_state);
 	const struct wlr_output_event_request_state *event = data;
 	wlr_output_commit_state(output->wlr_output, event->state);
+
+	struct tinywl_server *server = output->server;
+	wlr_scene_rect_set_size(server->background, output->wlr_output->width, output->wlr_output->height);
 }
 
 static void output_destroy(struct wl_listener *listener, void *data)
@@ -1076,6 +1103,7 @@ int main(int argc, char *argv[])
 	 */
 	server.scene = wlr_scene_create();
 	server.scene_layout = wlr_scene_attach_output_layout(server.scene, server.output_layout);
+	server.background = wlr_scene_rect_create(&server.scene->tree, 1000, 600, (float[]){0.2, 0.4, 0.6, 1.0});
 
 	/* Set up xdg-shell version 3. The xdg-shell is a Wayland protocol which is
 	 * used for application windows. For more detail on shells, refer to

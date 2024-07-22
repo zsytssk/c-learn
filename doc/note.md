@@ -12,7 +12,7 @@ https://wayland.freedesktop.org/docs/html/ch04.html
 
 ## 2024-07-01 15:13:10
 
-- @ques `river` 中 zig 如何监听事件的
+- @ques 如何显示 app | 点击关闭按钮关闭 app
 
 - @ques 能不能直接使用 wlroots 源代码编译
 
@@ -43,6 +43,9 @@ https://wayland.freedesktop.org/docs/html/ch04.html
   - https://www.learn-c.org/en/Arrays_and_Pointers
 
 ### end
+
+- @ques 如何改变背景的颜色
+- @ques `river` 中 zig 如何监听事件的
 
 - @ques 默认的鼠标图片是如何设置的?
 

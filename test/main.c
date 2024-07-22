@@ -207,7 +207,7 @@ static void new_input_notify(struct wl_listener *listener, void *data)
     switch (device->type)
     {
 
-    case WLR_INPUT_DEVICE_KEYBOARD:;
+    case WLR_INPUT_DEVICE_KEYBOARD:
         struct sample_keyboard *keyboard = calloc(1, sizeof(*keyboard));
         keyboard->wlr_keyboard = wlr_keyboard_from_input_device(device);
         keyboard->sample = sample;

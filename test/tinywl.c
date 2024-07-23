@@ -186,6 +186,7 @@ static void keyboard_handle_modifiers(
 
 static bool handle_keybinding(struct tinywl_server *server, xkb_keysym_t sym)
 {
+
 	/*
 	 * Here we handle compositor keybindings. This is when the compositor is
 	 * processing keys, rather than passing them on to the client for its own
@@ -204,6 +205,7 @@ static bool handle_keybinding(struct tinywl_server *server, xkb_keysym_t sym)
 		{
 			break;
 		}
+
 		struct tinywl_toplevel *next_toplevel =
 			wl_container_of(server->toplevels.prev, next_toplevel, link);
 		focus_toplevel(next_toplevel, next_toplevel->xdg_toplevel->base->surface);

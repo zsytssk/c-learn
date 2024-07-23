@@ -256,7 +256,7 @@ static void server_cursor_motion_absolute(struct wl_listener *listener, void *da
 
 int main(void)
 {
-    wlr_log_init(WLR_DEBUG, NULL);
+    wlr_log_init(WLR_ERROR, NULL);
     struct wl_display *wl_display = wl_display_create();
     struct local_server server = {.wl_display = wl_display};
 

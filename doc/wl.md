@@ -56,6 +56,13 @@ xkb_context_unref(context);
 
   - 内存管理, wlr_output_init_render 需要
 
+- wlr_compositor 用于管理和处理 Wayland 客户端的表面（surface）。
+- wlr_subcompositor 管理子表面和父表面之间的关系，而不是直接进行渲染操作。
+
+- wlr_output_layout
+
+  - wlroots 提供的一个用于管理和组织多个输出（如显示器、屏幕等）的组件。它允许合成器定义每个输出的位置和大小，从而实现多显示器环境的布局和管理。
+
 - wlr_xdg_toplevel
 
   - 处理窗口的事件 -> 最大化 最小化...

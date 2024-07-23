@@ -3,16 +3,26 @@ https://wayland.freedesktop.org/docs/html/ch04.html
 
 ## 练习
 
-- @save
-
-  - `calloc(1, sizeof(*sample_output))`
-  - `struct timespec now; clock_gettime(CLOCK_MONOTONIC, &now);`
+- 可以自己写一些 c 代码, 提高对 c 的熟悉度
 
 - @ques c 语言中的宏 `wl_container_of`
 
 ## 2024-07-01 15:13:10
 
+- @ques main 代码 什么时候能启动一个 app?
+
+  - 渲染的 app -> server_new_output
+
 - @ques 如何显示 app | 点击关闭按钮关闭 app
+
+  - 怎么知道自己点击关闭按钮 `wlr_seat_pointer_notify_button(..);`
+
+- @ques `wlr_xdg_toplevel` 是干嘛的
+
+  - `&xdg_toplevel->base->surface->events.map` 显示
+  - `&xdg_toplevel->base->surface->events.commit` 每当 wlr_surface 发生变更（例如，内容被更新、大小发生变化、状态改变等）时，都会触发
+
+- @ques 每一个的 app 的顶栏能不能不显示(最小化, 关闭..按钮的位置)
 
 - @ques 能不能直接使用 wlroots 源代码编译
 

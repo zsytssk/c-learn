@@ -12,6 +12,8 @@
     "new-commit": "markdown",
     "wlr_seat.h": "c",
     "wlr_pointer.h": "c",
-    "format": "c"
+    "format": "c",
+    "wlr_renderer.h": "c",
+    "algorithm": "c"
   }
 }

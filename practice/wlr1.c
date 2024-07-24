@@ -31,46 +31,46 @@ struct local_output
 
 void output_frame_notify(struct wl_listener *listener, void *data)
 {
+    wlr_log(WLR_ERROR, "output_frame_notify");
     struct local_output *local_output = wl_container_of(listener, local_output, frame);
     struct local_server *server = local_output->server;
     struct wlr_output *output = local_output->output;
-
-    wlr_log(WLR_ERROR, "output_frame_notify: %s", output->name);
 }
 void output_destroy_notify(struct wl_listener *listener, void *data)
 {
+    wlr_log(WLR_ERROR, "output_destroy_notify");
     struct local_output *local_output = wl_container_of(listener, local_output, destroy);
     struct local_server *server = local_output->server;
     struct wlr_output *output = local_output->output;
-
-    wlr_log(WLR_ERROR, "output_destroy_notify: %s", output->name);
 }
 void output_request_state_notify(struct wl_listener *listener, void *data)
 {
+    wlr_log(WLR_ERROR, "output_request_state_notify");
     struct local_output *local_output = wl_container_of(listener, local_output, request_state);
     struct local_server *server = local_output->server;
     struct wlr_output *output = local_output->output;
-
-    wlr_log(WLR_ERROR, "output_request_state_notify: %s", output->name);
 }
 
 void server_new_output(struct wl_listener *listener, void *data)
 {
-    struct local_server *server = wl_container_of(listener, server, new_output);
     struct wlr_output *output = data;
-    wlr_log(WLR_ERROR, "server_new_output: %s", output->name);
+    struct local_server *server = wl_container_of(listener, server, new_output);
     wlr_output_init_render(output, server->allocator, server->renderer);
 
-    struct local_output local_output = {0};
-    local_output.output = output;
-    local_output.server = server;
+    // struct local_output local_output = {0};
+    // local_output.output = output;
+    // local_output.server = server;
+    struct local_output *local_output = calloc(1, sizeof(*local_output));
+    local_output->output = output;
+    local_output->server = server;
+    wlr_log(WLR_ERROR, "server_new_output: %s", output->name);
 
-    wl_signal_add(&output->events.frame, &local_output.frame);
-    local_output.frame.notify = output_frame_notify;
-    wl_signal_add(&output->events.destroy, &local_output.destroy);
-    local_output.destroy.notify = output_destroy_notify;
-    wl_signal_add(&output->events.request_state, &local_output.request_state);
-    local_output.request_state.notify = output_request_state_notify;
+    wl_signal_add(&output->events.frame, &local_output->frame);
+    local_output->frame.notify = output_frame_notify;
+    wl_signal_add(&output->events.destroy, &local_output->destroy);
+    local_output->destroy.notify = output_destroy_notify;
+    wl_signal_add(&output->events.request_state, &local_output->request_state);
+    local_output->request_state.notify = output_request_state_notify;
 
     struct wlr_output_state state;
     wlr_output_state_init(&state);
@@ -127,7 +127,6 @@ int main(void)
         return 1;
     }
     wl_display_run(server.display);
-
     wlr_backend_destroy(server.backend);
     wl_display_destroy(server.display);
     return 0;

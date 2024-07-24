@@ -11,6 +11,7 @@
     "*.tsx": "typescriptreact",
     "new-commit": "markdown",
     "wlr_seat.h": "c",
-    "wlr_pointer.h": "c"
+    "wlr_pointer.h": "c",
+    "format": "c"
   }
 }

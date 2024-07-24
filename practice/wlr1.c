@@ -20,11 +20,68 @@ struct local_server
     struct wl_listener new_output;
 };
 
+struct local_output
+{
+    struct local_server *server;
+    struct wlr_output *output;
+    struct wl_listener frame;
+    struct wl_listener destroy;
+    struct wl_listener request_state;
+};
+
+void output_frame_notify(struct wl_listener *listener, void *data)
+{
+    struct local_output *local_output = wl_container_of(listener, local_output, frame);
+    struct local_server *server = local_output->server;
+    struct wlr_output *output = local_output->output;
+
+    wlr_log(WLR_ERROR, "output_frame_notify: %s", output->name);
+}
+void output_destroy_notify(struct wl_listener *listener, void *data)
+{
+    struct local_output *local_output = wl_container_of(listener, local_output, destroy);
+    struct local_server *server = local_output->server;
+    struct wlr_output *output = local_output->output;
+
+    wlr_log(WLR_ERROR, "output_destroy_notify: %s", output->name);
+}
+void output_request_state_notify(struct wl_listener *listener, void *data)
+{
+    struct local_output *local_output = wl_container_of(listener, local_output, request_state);
+    struct local_server *server = local_output->server;
+    struct wlr_output *output = local_output->output;
+
+    wlr_log(WLR_ERROR, "output_request_state_notify: %s", output->name);
+}
+
 void server_new_output(struct wl_listener *listener, void *data)
 {
     struct local_server *server = wl_container_of(listener, server, new_output);
     struct wlr_output *output = data;
     wlr_log(WLR_ERROR, "server_new_output: %s", output->name);
+    wlr_output_init_render(output, server->allocator, server->renderer);
+
+    struct local_output local_output = {0};
+    local_output.output = output;
+    local_output.server = server;
+
+    wl_signal_add(&output->events.frame, &local_output.frame);
+    local_output.frame.notify = output_frame_notify;
+    wl_signal_add(&output->events.destroy, &local_output.destroy);
+    local_output.destroy.notify = output_destroy_notify;
+    wl_signal_add(&output->events.request_state, &local_output.request_state);
+    local_output.request_state.notify = output_request_state_notify;
+
+    struct wlr_output_state state;
+    wlr_output_state_init(&state);
+    wlr_output_state_set_enabled(&state, true);
+    struct wlr_output_mode *mode = wlr_output_preferred_mode(output);
+    if (mode != NULL)
+    {
+        wlr_output_state_set_mode(&state, mode);
+    }
+    wlr_output_commit_state(output, &state);
+    wlr_output_state_finish(&state);
 }
 
 int main(void)

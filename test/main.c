@@ -109,7 +109,7 @@ static void new_output_notify(struct wl_listener *listener, void *data)
     struct local_server *sample =
         wl_container_of(listener, sample, new_output);
 
-    wlr_log(WLR_ERROR, "new_output_notify:> %d", output->width);
+    wlr_log(WLR_ERROR, "new_output_notify:> %s", output->description);
     wlr_output_init_render(output, sample->allocator, sample->renderer);
 
     struct sample_output *sample_output = calloc(1, sizeof(*sample_output));

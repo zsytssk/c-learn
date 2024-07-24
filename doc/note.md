@@ -9,6 +9,8 @@ https://wayland.freedesktop.org/docs/html/ch04.html
 
 ## 2024-07-01 15:13:10
 
+- @ques `wlr_output_preferred_mode`
+
 - @ques main 代码 什么时候能启动一个 app?
 
   - 渲染的 app -> server_new_output

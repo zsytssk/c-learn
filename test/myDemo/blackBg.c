@@ -7,6 +7,16 @@
 #include <wlr/types/wlr_data_device.h>
 #include <wlr/types/wlr_output.h>
 #include <wlr/types/wlr_output_layout.h>
+#include <wlr/render/wlr_renderer.h>
+
+struct local_output
+{
+    struct local_server *server;
+    struct wlr_output *output;
+    struct wl_listener frame;
+    struct wl_listener destroy;
+    struct wl_listener request_state;
+};
 
 struct local_server
 {
@@ -18,37 +28,54 @@ struct local_server
     struct wlr_output_layout *output_layout;
     struct wl_list outputs;
     struct wl_listener new_output;
-};
-
-struct local_output
-{
-    struct local_server *server;
-    struct wlr_output *output;
-    struct wl_listener frame;
-    struct wl_listener destroy;
-    struct wl_listener request_state;
+    struct wl_listener new_input;
+    struct local_output local_output;
 };
 
 void output_frame_notify(struct wl_listener *listener, void *data)
 {
-    wlr_log(WLR_ERROR, "output_frame_notify");
+    // wlr_log(WLR_ERROR, "output_frame_notify");
     struct local_output *local_output = wl_container_of(listener, local_output, frame);
     struct local_server *server = local_output->server;
     struct wlr_output *output = local_output->output;
+
+    struct wlr_output_state state;
+    wlr_output_state_init(&state);
+    struct wlr_render_pass *pass = wlr_output_begin_render_pass(output, &state, NULL, NULL);
+    if (pass == NULL)
+    {
+        return;
+    }
+    wlr_render_pass_add_rect(pass, &(struct wlr_render_rect_options){
+                                       .box = {
+                                           .width = state.custom_mode.width,
+                                           .height = state.custom_mode.height,
+                                       },
+                                       .color = {
+                                           .r = 0,
+                                           .g = 0,
+                                           .b = 0,
+                                           .a = 0.2,
+                                       }});
+    wlr_render_pass_submit(pass);
+    wlr_output_commit_state(output, &state);
+    wlr_output_state_finish(&state);
 }
 void output_destroy_notify(struct wl_listener *listener, void *data)
 {
     wlr_log(WLR_ERROR, "output_destroy_notify");
     struct local_output *local_output = wl_container_of(listener, local_output, destroy);
-    struct local_server *server = local_output->server;
-    struct wlr_output *output = local_output->output;
+    wl_list_remove(&local_output->frame.link);
+    wl_list_remove(&local_output->destroy.link);
+    wl_list_remove(&local_output->request_state.link);
+    free(local_output);
 }
 void output_request_state_notify(struct wl_listener *listener, void *data)
 {
     wlr_log(WLR_ERROR, "output_request_state_notify");
     struct local_output *local_output = wl_container_of(listener, local_output, request_state);
-    struct local_server *server = local_output->server;
-    struct wlr_output *output = local_output->output;
+    const struct wlr_output_event_request_state *event = data;
+    wlr_output_commit_state(local_output->output, event->state);
 }
 
 void server_new_output(struct wl_listener *listener, void *data)
@@ -57,20 +84,18 @@ void server_new_output(struct wl_listener *listener, void *data)
     struct local_server *server = wl_container_of(listener, server, new_output);
     wlr_output_init_render(output, server->allocator, server->renderer);
 
-    // struct local_output local_output = {0};
-    // local_output.output = output;
-    // local_output.server = server;
     struct local_output *local_output = calloc(1, sizeof(*local_output));
     local_output->output = output;
     local_output->server = server;
+
     wlr_log(WLR_ERROR, "server_new_output: %s", output->name);
 
-    wl_signal_add(&output->events.frame, &local_output->frame);
     local_output->frame.notify = output_frame_notify;
-    wl_signal_add(&output->events.destroy, &local_output->destroy);
+    wl_signal_add(&output->events.frame, &local_output->frame);
     local_output->destroy.notify = output_destroy_notify;
-    wl_signal_add(&output->events.request_state, &local_output->request_state);
+    wl_signal_add(&output->events.destroy, &local_output->destroy);
     local_output->request_state.notify = output_request_state_notify;
+    wl_signal_add(&output->events.request_state, &local_output->request_state);
 
     struct wlr_output_state state;
     wlr_output_state_init(&state);

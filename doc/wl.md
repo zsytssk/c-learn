@@ -27,7 +27,7 @@ allocator = wlr_allocator_autocreate(backend, state.renderer);
 
 ## other
 
-`xkbcommon` 键盘映射的库
+`xkbcommon` 键盘映射的库 -> XKB 是 X Window System 的键盘扩展，用于定义和管理键盘布局、键位绑定和其他键盘相关的配置
 
 ```c
 struct xkb_context *context = xkb_context_new(XKB_CONTEXT_NO_FLAGS);

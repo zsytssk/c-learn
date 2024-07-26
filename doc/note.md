@@ -7,13 +7,33 @@ https://wayland.freedesktop.org/docs/html/ch04.html
 
 - @ques c 语言中的宏 `wl_container_of`
 
-## 2024-07-01 15:13:10
+- @ques `wlr_output_preferred_mode` | `wlr_render_pass`
 
-- @ques `wlr_output_preferred_mode`
+- @ques `wl_list_init` `wl_list_remove` `wl_list_insert`
+
+  - @ques 把那些 link insert 到一块有啥用
 
 - @ques main 代码 什么时候能启动一个 app?
 
   - 渲染的 app -> server_new_output
+
+- @ques `xkb_context` 是干嘛的 ->
+
+  - 给 keyboard 去 key 绑定? `XKB_KEY_Escape`
+  - 如果没有 xkb_context 就不能进行这些绑定吗? -> 是的
+
+- @ques 如何监听 alt + control..特殊键位
+- @ques 必须有 `server.seat` 才能显示鼠标吗?
+
+## 2024-07-01 15:13:10
+
+- @ques timespec 有没有更简单的方式来创建
+
+```c
+struct timespec now;
+clock_gettime(CLOCK_MONOTONIC, &now);
+wlr_scene_output_send_frame_done(scene_output, &now);
+```
 
 - @ques 如何显示 app | 点击关闭按钮关闭 app
 

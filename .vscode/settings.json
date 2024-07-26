@@ -14,6 +14,10 @@
     "wlr_pointer.h": "c",
     "format": "c",
     "wlr_renderer.h": "c",
-    "algorithm": "c"
+    "algorithm": "c",
+    "wlr_scene.h": "c",
+    "wlr_cursor.h": "c",
+    "cstdlib": "c",
+    "wlr_xcursor_manager.h": "c"
   }
 }

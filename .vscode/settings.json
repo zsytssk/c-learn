@@ -18,6 +18,8 @@
     "wlr_scene.h": "c",
     "wlr_cursor.h": "c",
     "cstdlib": "c",
-    "wlr_xcursor_manager.h": "c"
+    "wlr_xcursor_manager.h": "c",
+    "wlr_tablet_tool.h": "c",
+    "wlr_fullscreen_shell_v1.h": "c"
   }
 }

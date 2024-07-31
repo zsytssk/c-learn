@@ -27,6 +27,19 @@ https://wayland.freedesktop.org/docs/html/ch04.html
 
 ## 2024-07-01 15:13:10
 
+- @ques c 中 `static void` 和`void`的区别
+
+- @ques 移动窗口
+
+  - desktop_toplevel_at
+  - `的`
+
+- @ques 要不要分文件
+
+  - c 的循环引用怎么处理?
+
+- @ques 图片移动
+
 - @ques timespec 有没有更简单的方式来创建
 
 ```c

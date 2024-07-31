@@ -1,5 +1,7 @@
 https://wayland.freedesktop.org/docs/html/apa.html
 
+每一个人都应该自己写一个他自己的桌面
+
 ## wlroots
 
 - output_layout

@@ -3,14 +3,14 @@
     {
       "name": "Linux",
       "includePath": [
-        "${workspaceFolder}/**",
-        "/usr/include/cairo",
-        "/usr/include/wlroots-0.18",
-        "/usr/include/libdrm",
-        "/usr/include/pixman-1"
+        "${workspaceFolder}/**"
+        // "/usr/include/cairo",
+        // "/usr/include/wlroots-0.18",
+        // "/usr/include/libdrm",
+        // "/usr/include/pixman-1"
       ],
       "defines": [],
-      "compilerPath": "/usr/bin/clang",
+      "compilerPath": "/usr/bin/gcc",
       "cStandard": "c17",
       "cppStandard": "c++17",
       "intelliSenseMode": "linux-clang-x64"

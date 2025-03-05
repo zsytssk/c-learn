@@ -1,6 +1,166 @@
 https://way-cooler.org/book/basic_output_cursor.html
 https://wayland.freedesktop.org/docs/html/ch04.html
 
+- 学习 + 练习
+
+## 2025-03-05 10:08:23
+
+- @ques
+
+  - c 传递参数后就会变成指针吗？ -> 函数的确是的， 数据类型呢？
+
+- @练习
+  - `void *` -> 转换类型
+  - switch union -> ..
+
+```c
+void *callFn(void *(*fn)())
+{
+    fn();
+}
+
+char *test()
+{
+    return "this is a test";
+}
+
+int main()
+{
+    char *a = callFn((void *(*)())test);
+    printf("%s\n", a);
+}
+```
+
+## 2025-03-03 13:06:57
+
+- layout 第三种的名字显示不正确
+  - 都找不出来这值在哪设置的。。。
+
+```
+如果我的layouts里面的item数目为3, 切换到第三个时，m->ltsymbol就会变成[1], 这是在哪设置的
+```
+
+```c
+/* function implementations */
+void applyrules(Client *c)
+{
+  const char *class, *instance;
+  unsigned int i;
+  const Rule *r;
+  Monitor *m;
+  XClassHint ch = {NULL, NULL};
+
+  /* rule matching */
+  c->isfloating = 0;
+  c->tags = 0;
+  XGetClassHint(dpy, c->win, &ch);
+  class = ch.res_class ? ch.res_class : broken;
+  instance = ch.res_name ? ch.res_name : broken;
+
+  for (i = 0; i < LENGTH(rules); i++)
+  {
+    r = &rules[i];
+    if ((!r->title || strstr(c->name, r->title)) &&
+        (!r->class || strstr(class, r->class)) &&
+        (!r->instance || strstr(instance, r->instance)))
+    {
+      c->isfloating = r->isfloating;
+      c->tags |= r->tags;
+      for (m = mons; m && m->num != r->monitor; m = m->next)
+        ;
+      if (m)
+        c->mon = m;
+    }
+  }
+  if (ch.res_class)
+    XFree(ch.res_class);
+  if (ch.res_name)
+    XFree(ch.res_name);
+  c->tags =
+      c->tags & TAGMASK ? c->tags & TAGMASK : c->mon->tagset[c->mon->seltags];
+}
+```
+
+## 2025-02-27 16:53:50
+
+https://www.youtube.com/watch?v=arLQA52Ieik
+
+```c
+void togglefloating(const Arg *arg)
+{
+  if (!selmon->sel)
+    return;
+  if (selmon->sel->isfullscreen) /* no support for fullscreen windows */
+    return;
+  selmon->sel->isfloating = !selmon->sel->isfloating || selmon->sel->isfixed;
+  if (selmon->sel->isfloating)
+    resize(selmon->sel, selmon->sel->x, selmon->sel->y, selmon->sel->w,
+           selmon->sel->h, 0);
+  arrange(selmon);
+}
+```
+
+```c
+void spawn(const Arg *arg) {
+  struct sigaction sa;
+
+  // if (arg->v == dmenucmd)
+  // 	dmenumon[0] = '0' + selmon->num;
+  if (fork() == 0) {
+    if (dpy) close(ConnectionNumber(dpy));
+    setsid();
+
+    sigemptyset(&sa.sa_mask);
+    sa.sa_flags = 0;
+    sa.sa_handler = SIG_DFL;
+    sigaction(SIGCHLD, &sa, NULL);
+
+    execvp(((char **)arg->v)[0], (char **)arg->v);
+    die("dwm: execvp '%s' failed:", ((char **)arg->v)[0]);
+  }
+}
+```
+
+```c
+
+void setlayout(const Arg *arg) {
+  if (!arg || !arg->v || arg->v != selmon->lt[selmon->sellt])
+    selmon->sellt ^= 1;
+  if (arg && arg->v) selmon->lt[selmon->sellt] = (Layout *)arg->v;
+  strncpy(selmon->ltsymbol, selmon->lt[selmon->sellt]->symbol,
+          sizeof selmon->ltsymbol);
+  if (selmon->sel)
+    arrange(selmon);
+  else
+    drawbar(selmon);
+}
+```
+
+```c
+static void (*handler[LASTEvent])(XEvent *) = {
+    [ButtonPress] = buttonpress,
+    [ClientMessage] = clientmessage,
+    [ConfigureRequest] = configurerequest,
+    [ConfigureNotify] = configurenotify,
+    [DestroyNotify] = destroynotify,
+    [EnterNotify] = enternotify,
+    [Expose] = expose,
+    [FocusIn] = focusin,
+    [KeyPress] = keypress,
+    [MappingNotify] = mappingnotify,
+    [MapRequest] = maprequest,
+    [MotionNotify] = motionnotify,
+    [PropertyNotify] = propertynotify,
+    [UnmapNotify] = unmapnotify};
+```
+
+## 2025-02-24 15:39:42
+
+15.5 + 补贴 260
+试用期 3 隔月 8 则 15500
+入职 下个星期
+体检
+
 ## 练习
 
 - @save

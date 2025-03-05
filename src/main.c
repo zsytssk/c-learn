@@ -60,7 +60,7 @@ win_draw(win_t *win)
     cairo_save(cr);
     cairo_set_font_size(cr, 20);
     cairo_move_to(cr, 100, 100);
-    cairo_show_text(cr, "Hello World.");
+    cairo_show_text(cr, "Hello World!");
     cairo_restore(cr);
 
     cairo_destroy(cr);

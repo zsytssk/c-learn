@@ -6,7 +6,7 @@ https://wayland.freedesktop.org/docs/html/ch04.html
 ## 2025-03-05 11:15:03
 
 https://zetcode.com/gfx/cairo/cairobackends/
-https://book.cairo-lang.org/
+https://www.cairographics.org/tutorial/
 
 ## 2025-03-05 10:08:23
 
